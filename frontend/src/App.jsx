@@ -1,0 +1,43 @@
+import { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './hooks/useAuth.js';
+import Navbar from './components/Navbar.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import CharacterPage from './pages/CharacterPage.jsx';
+import CampaignPage from './pages/CampaignPage.jsx';
+import PartyPage from './pages/PartyPage.jsx';
+import AdminPage from './pages/AdminPage.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
+
+function ProtectedRoute({ children, roles }) {
+  const { user, token } = useAuthStore();
+  if (!token) return <Navigate to="/login" replace />;
+  if (!user) return null;
+  if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
+  return children;
+}
+
+export default function App() {
+  const { fetchMe, token } = useAuthStore();
+  useEffect(() => {
+    if (token) fetchMe();
+    else useAuthStore.setState({ loading: false });
+  }, []);
+
+  return (
+    <>
+      <Navbar />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/characters/:id" element={<ProtectedRoute><CharacterPage /></ProtectedRoute>} />
+        <Route path="/campaigns/:id" element={<ProtectedRoute roles={['GM','ADMIN']}><CampaignPage /></ProtectedRoute>} />
+        <Route path="/party/:id" element={<ProtectedRoute><PartyPage /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
+  );
+}

@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  GM
+  PLAYER
+}
+
+enum TRPGSystem {
+  DUNGEON_WORLD
+  CYBERPUNK_RED
+  CAIN
+}
+
+model User {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  email           String   @unique
+  password        String
+  role            Role     @default(PLAYER)
+  discordWebhook  String?
+  discordWebhooks Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  characters   Character[]
+  campaigns    Campaign[]    @relation("GMCampaigns")
+  partyMembers PartyMember[]
+}
+
+model Character {
+  id          String     @id @default(cuid())
+  name        String
+  system      TRPGSystem
+  sheetData   Json
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partyMember PartyMember?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Campaign {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  system      TRPGSystem
+  gmId        String
+  gm          User       @relation("GMCampaigns", fields: [gmId], references: [id], onDelete: Cascade)
+  inviteCode  String     @unique @default(cuid())
+  coverImage  String?
+  party       Party?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Party {
+  id         String        @id @default(cuid())
+  campaignId String        @unique
+  campaign   Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  members    PartyMember[]
+  createdAt  DateTime      @default(now())
+}
+
+model PartyMember {
+  id          String    @id @default(cuid())
+  partyId     String
+  party       Party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  characterId String    @unique
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  joinedAt    DateTime  @default(now())
+
+  @@unique([partyId, userId])
+}
+
+model DiceLog {
+  id            String     @id @default(cuid())
+  userId        String
+  campaignId    String?
+  system        TRPGSystem
+  expression    String
+  result        Int
+  details       Json
+  sentToDiscord Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+}
