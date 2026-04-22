@@ -6,21 +6,28 @@ import DiceRoller from '../components/DiceRoller.jsx';
 import toast from 'react-hot-toast';
 
 // ── Portrait Crop Modal ─────────────────────────────────────────
+// Preview matches actual display ratio: 130w × 150h
 function PortraitCropModal({ imageUrl, onConfirm, onCancel }) {
   const canvasRef = useRef();
   const [drag, setDrag] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
+  const [scaleMin, setScaleMin] = useState(0.1);
+  const [scaleMax, setScaleMax] = useState(5);
   const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
   const startRef = useRef(null);
-  const PREVIEW = 320; // preview box px
+  const PW = 260;
+  const PH = Math.round(PW * 150 / 130); // keep 130:150 ratio ≈ 300px
 
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
-      const ratio = Math.max(PREVIEW / img.width, PREVIEW / img.height);
+      const ratio = Math.max(PW / img.width, PH / img.height);
+      const mn = Math.max(PW / img.width, PH / img.height) * 0.9;
+      setScaleMin(mn);
+      setScaleMax(mn * 7);
       setScale(ratio);
-      setPos({ x: (PREVIEW - img.width * ratio) / 2, y: (PREVIEW - img.height * ratio) / 2 });
+      setPos({ x: (PW - img.width * ratio) / 2, y: (PH - img.height * ratio) / 2 });
       setImgSize({ w: img.width, h: img.height });
     };
     img.src = imageUrl;
@@ -28,11 +35,11 @@ function PortraitCropModal({ imageUrl, onConfirm, onCancel }) {
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !imgSize.w) return;
     const ctx = canvas.getContext('2d');
     const img = new Image();
     img.onload = () => {
-      ctx.clearRect(0, 0, PREVIEW, PREVIEW);
+      ctx.clearRect(0, 0, PW, PH);
       ctx.drawImage(img, pos.x, pos.y, imgSize.w * scale, imgSize.h * scale);
     };
     img.src = imageUrl;
@@ -50,44 +57,55 @@ function PortraitCropModal({ imageUrl, onConfirm, onCancel }) {
   };
   const onMouseUp = () => setDrag(false);
 
-  const onWheel = (e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setScale(s => Math.max(0.2, Math.min(5, s * delta)));
-  };
-
   const handleConfirm = () => {
+    const OUT_W = 400;
+    const OUT_H = Math.round(OUT_W * 150 / 130);
     const canvas = document.createElement('canvas');
-    canvas.width = 400; canvas.height = 400;
+    canvas.width = OUT_W; canvas.height = OUT_H;
     const ctx = canvas.getContext('2d');
-    const ratio = 400 / PREVIEW;
+    const rw = OUT_W / PW, rh = OUT_H / PH;
     const img = new Image();
     img.onload = () => {
-      ctx.drawImage(img, pos.x * ratio, pos.y * ratio, imgSize.w * scale * ratio, imgSize.h * scale * ratio);
-      onConfirm(canvas.toDataURL('image/jpeg', 0.75));
+      ctx.drawImage(img, pos.x * rw, pos.y * rh, imgSize.w * scale * rw, imgSize.h * scale * rh);
+      onConfirm(canvas.toDataURL('image/jpeg', 0.78));
     };
     img.src = imageUrl;
   };
 
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#161616', border: '1px solid #3d2510', borderRadius: 10, padding: 28, width: 400, boxShadow: '0 0 60px rgba(201,168,76,0.1)' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: 16, color: '#c9a84c', marginBottom: 6 }}>🖼 Crop Portrait</div>
-        <div style={{ color: '#555', fontSize: 12, marginBottom: 16 }}>ลากเพื่อเลื่อน · Scroll เพื่อ Zoom</div>
+  const acc = '#c9a84c';
+  const zoomPct = scaleMax > scaleMin ? Math.round(((scale - scaleMin) / (scaleMax - scaleMin)) * 100) : 50;
 
-        {/* Canvas preview */}
-        <div style={{ position: 'relative', width: PREVIEW, height: PREVIEW, overflow: 'hidden', borderRadius: 8, border: '2px solid #3d2510', cursor: drag ? 'grabbing' : 'grab', margin: '0 auto 16px' }}
-          onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp} onWheel={onWheel}>
-          <canvas ref={canvasRef} width={PREVIEW} height={PREVIEW} style={{ display: 'block' }} />
-          {/* Grid overlay */}
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: `${PREVIEW/3}px ${PREVIEW/3}px` }} />
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#161616', border: '1px solid #3d2510', borderRadius: 10, padding: 28, width: PW + 56, boxShadow: '0 0 60px rgba(201,168,76,0.12)' }}>
+        <div style={{ fontFamily: 'Cinzel, serif', fontSize: 16, color: acc, marginBottom: 4 }}>🖼 Crop Portrait</div>
+        <div style={{ color: '#555', fontSize: 12, marginBottom: 14 }}>ลากเพื่อเลื่อน · ใช้ Slider ด้านล่างเพื่อ Zoom</div>
+
+        {/* Canvas — same ratio as portrait display */}
+        <div style={{ position: 'relative', width: PW, height: PH, overflow: 'hidden', borderRadius: 8, border: `2px solid ${acc}44`, cursor: drag ? 'grabbing' : 'grab', margin: '0 auto', userSelect: 'none' }}
+          onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}>
+          <canvas ref={canvasRef} width={PW} height={PH} style={{ display: 'block' }} />
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px)`,
+            backgroundSize: `${PW/3}px ${PH/3}px` }} />
+        </div>
+
+        {/* Zoom slider */}
+        <div style={{ margin: '14px 0 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 18 }}>🔍</span>
+          <input type="range" min={scaleMin} max={scaleMax} step={0.001} value={scale}
+            onChange={e => setScale(parseFloat(e.target.value))}
+            style={{ flex: 1, accentColor: acc, cursor: 'pointer' }} />
+          <span style={{ fontSize: 11, color: '#666', fontFamily: 'Share Tech Mono, monospace', minWidth: 36, textAlign: 'right' }}>{zoomPct}%</span>
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={handleConfirm} style={{ flex: 1, background: '#c9a84c', color: '#000', border: 'none', borderRadius: 6, padding: '10px', fontFamily: 'Cinzel, serif', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em' }}>
+          <button onClick={handleConfirm}
+            style={{ flex: 1, background: acc, color: '#000', border: 'none', borderRadius: 6, padding: '11px', fontFamily: 'Cinzel, serif', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em' }}>
             ✓ ใช้รูปนี้
           </button>
-          <button onClick={onCancel} style={{ flex: 1, background: 'transparent', border: '1px solid #2a2a2a', color: '#666', borderRadius: 6, padding: '10px', fontFamily: 'Cinzel, serif', fontSize: 13, cursor: 'pointer' }}>
+          <button onClick={onCancel}
+            style={{ flex: 1, background: 'transparent', border: '1px solid #2a2a2a', color: '#666', borderRadius: 6, padding: '11px', fontFamily: 'Cinzel, serif', fontSize: 13, cursor: 'pointer' }}>
             ยกเลิก
           </button>
         </div>
@@ -95,7 +113,6 @@ function PortraitCropModal({ imageUrl, onConfirm, onCancel }) {
     </div>
   );
 }
-
 // ── Vitals Bar (redesigned) ──────────────────────────────────────
 function VitalsBar({ label, current, max, color, step = 1, onChangeCurrent, onChangeMax }) {
   const pct = Math.max(0, Math.min(100, ((current || 0) / (max || 1)) * 100));
@@ -115,7 +132,7 @@ function VitalsBar({ label, current, max, color, step = 1, onChangeCurrent, onCh
       {/* Label row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 11, color: acc, fontFamily: 'Cinzel, serif', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>{label}</span>
+          <span style={{ fontSize: 14, color: acc, fontFamily: 'Cinzel, serif', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>{label}</span>
           {step < 1 && (
             <span style={{ fontSize: 9, color: '#444', fontFamily: 'Share Tech Mono, monospace', background: '#1a1a1a', border: `1px solid ${color}22`, borderRadius: 4, padding: '1px 6px' }}>±{step}</span>
           )}
@@ -134,7 +151,7 @@ function VitalsBar({ label, current, max, color, step = 1, onChangeCurrent, onCh
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {/* Current */}
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: '#555', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>ปัจจุบัน</div>
+          <div style={{ fontSize: 12, color: '#777', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>ปัจจุบัน</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button onClick={decrease}
               style={{ background: '#1a1a1a', border: `1px solid ${color}44`, color: acc, width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}
@@ -154,7 +171,7 @@ function VitalsBar({ label, current, max, color, step = 1, onChangeCurrent, onCh
 
         {/* Max */}
         <div style={{ flex: '0 0 80px' }}>
-          <div style={{ fontSize: 10, color: '#555', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>สูงสุด</div>
+          <div style={{ fontSize: 12, color: '#777', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>สูงสุด</div>
           <input type="number" value={max ?? 0}
             step={step}
             onChange={e => onChangeMax(parseFloat(e.target.value) || 0)}
