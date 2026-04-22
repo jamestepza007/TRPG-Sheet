@@ -1,20 +1,22 @@
 import { create } from 'zustand';
-import api from '../utils/api';
+import api from '../utils/api.js';
 
 export const useAuthStore = create((set) => ({
   user: null,
   token: localStorage.getItem('token'),
   loading: true,
 
+  setLoading: (loading) => set({ loading }),
+
   login: async (username, password) => {
     const { data } = await api.post('/auth/login', { username, password });
     localStorage.setItem('token', data.token);
-    set({ user: data.user, token: data.token });
+    set({ user: data.user, token: data.token, loading: false });
   },
 
   logout: () => {
     localStorage.removeItem('token');
-    set({ user: null, token: null });
+    set({ user: null, token: null, loading: false });
   },
 
   fetchMe: async () => {
@@ -25,5 +27,5 @@ export const useAuthStore = create((set) => ({
       localStorage.removeItem('token');
       set({ user: null, token: null, loading: false });
     }
-  }
+  },
 }));

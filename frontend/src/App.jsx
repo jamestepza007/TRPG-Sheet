@@ -11,18 +11,25 @@ import AdminPage from './pages/AdminPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 
 function ProtectedRoute({ children, roles }) {
-  const { user, token } = useAuthStore();
-  if (!token) return <Navigate to="/login" replace />;
-  if (!user) return null;
+  const { user, token, loading } = useAuthStore();
+
+  // Still fetching user info — don't redirect yet
+  if (loading) return null;
+
+  if (!token || !user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
   return children;
 }
 
 export default function App() {
-  const { fetchMe, token } = useAuthStore();
+  const { fetchMe, setLoading, token } = useAuthStore();
+
   useEffect(() => {
-    if (token) fetchMe();
-    else useAuthStore.setState({ loading: false });
+    if (token) {
+      fetchMe();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   return (
