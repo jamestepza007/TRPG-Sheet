@@ -90,7 +90,9 @@ export const SYSTEMS = {
       INTERFACING: 0, INVESTIGATION: 0, SURVEILLANCE: 0,
       NEGOTIATION: 0, AUTHORITY: 0, CONNECTION: 0,
       skillImprovements: 0,
-      // Psyche burst (3 circles)
+      // Stress + Execution
+      stress: 0,
+      // Psyche burst
       psycheBurst: 0,
       // Injuries (5 circles)
       injuries: 0,

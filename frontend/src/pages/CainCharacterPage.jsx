@@ -37,17 +37,20 @@ function DotRow({ value, max = 3, onChange, color = C.dark }) {
 }
 
 // ── Circle row (injuries, XP etc) ────────────────────────────────
-function CircleRow({ count, filled, onToggle, size = 16, color = C.dark, crossed = [] }) {
+function CircleRow({ count, filled, onToggle, size = 16, color = C.dark, crossed = [], dashedFrom = null }) {
   return (
-    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} onClick={() => onToggle(i)}
-          style={{ width: size, height: size, borderRadius: '50%', border: `2px solid ${color}`, background: i < filled ? color : 'transparent', cursor: 'pointer', position: 'relative', transition: 'background 0.15s' }}>
-          {crossed.includes(i) && (
-            <div style={{ position: 'absolute', inset: -2, display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontSize: 12, fontWeight: 700 }}>✕</div>
-          )}
-        </div>
-      ))}
+    <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+      {Array.from({ length: count }, (_, i) => {
+        const dashed = dashedFrom !== null && i >= dashedFrom;
+        return (
+          <div key={i} onClick={() => onToggle(i)}
+            style={{ width: size, height: size, borderRadius: '50%', border: `2px ${dashed ? 'dashed' : 'solid'} ${color}`, background: i < filled ? color : 'transparent', cursor: 'pointer', position: 'relative', transition: 'background 0.15s', opacity: dashed && i >= filled ? 0.5 : 1 }}>
+            {crossed.includes(i) && (
+              <div style={{ position: 'absolute', inset: -2, display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontSize: 12, fontWeight: 700 }}>✕</div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -81,20 +84,32 @@ function SectionBox({ title, children, style = {} }) {
 }
 
 // ── Execution bar ────────────────────────────────────────────────
-function ExecutionBar({ max, injuries }) {
-  const filled = max - injuries;
+// stress = how many boxes marked, execMax = 6 - injuries
+// When stress fills execMax → gain injury, reset stress, execMax drops by 1
+function ExecutionBar({ stress, execMax, onStressChange, onInjury }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
         <span style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: C.dark }}>EXECUTION</span>
-        <span style={{ fontFamily: C.font, fontSize: 10, color: filled <= 2 ? C.red : C.mid }}>{filled} / {max}</span>
+        <span style={{ fontFamily: C.font, fontSize: 10, color: stress >= execMax - 1 ? C.red : C.mid }}>{execMax - stress} / {execMax}</span>
       </div>
       <div style={{ display: 'flex', gap: 3 }}>
-        {Array.from({ length: max }, (_, i) => (
-          <div key={i} style={{ flex: 1, height: 16, border: `1px solid ${C.borderDark}`, background: i < filled ? C.dark : 'transparent', transition: 'background 0.2s' }} />
+        {Array.from({ length: execMax }, (_, i) => (
+          <div key={i} onClick={() => {
+            const newStress = i < stress ? i : i + 1; // click filled = reduce, click empty = mark to here
+            if (newStress >= execMax) {
+              // Filled up — gain injury, reset stress
+              onInjury();
+            } else {
+              onStressChange(newStress);
+            }
+          }}
+            style={{ flex: 1, height: 16, border: `1px solid ${C.borderDark}`, background: i < stress ? C.dark : 'transparent', transition: 'background 0.2s', cursor: 'pointer' }} />
         ))}
       </div>
-      <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginTop: 3 }}>Starts at 6. -1 per injury. If filled, gain an injury and roll over remainder of stress.</div>
+      <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginTop: 3 }}>
+        Click to mark stress. When full → gain injury, execution max drops by 1.
+      </div>
     </div>
   );
 }
@@ -286,7 +301,7 @@ export default function CainCharacterPage() {
 
   const psyche = sys.getPsyche(sheet.cat || 1);
   const injuries = sheet.injuries || 0;
-  const execMax = 6;
+  const execMax = Math.max(1, 6 - injuries); // drops by 1 per injury
 
   const statusColor = { saved: '#2a5a2a', saving: '#5a4a00', dirty: '#888', error: '#8b0000' }[saveStatus];
   const statusLabel = { saved: '■ FILED', saving: '◌ FILING...', dirty: '○ UNSAVED', error: '✕ ERROR' }[saveStatus];
@@ -396,11 +411,20 @@ export default function CainCharacterPage() {
 
           {/* Health */}
           <SectionBox title="HEALTH EVALUATION">
-            <ExecutionBar max={execMax} injuries={injuries} />
+            <ExecutionBar
+                stress={sheet.stress || 0}
+                execMax={execMax}
+                onStressChange={v => update('stress', v)}
+                onInjury={() => {
+                  const newInjuries = Math.min(5, injuries + 1);
+                  update('injuries', newInjuries);
+                  update('stress', 0);
+                }}
+              />
             <div style={{ marginTop: 12 }}>
               <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginBottom: 6 }}>INJURIES:</div>
               <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 6 }}>Each gives -1 stress. Suffer an injury when execution fills up. Clear all stress when gaining an injury.</div>
-              <CircleRow count={5} filled={injuries} onToggle={i => update('injuries', i < injuries ? i : i + 1)} size={18} color={C.red} />
+              <CircleRow count={5} filled={injuries} onToggle={i => update('injuries', i < injuries ? i : i + 1)} size={18} color={C.red} dashedFrom={3} />
             </div>
 
             <div style={{ marginTop: 12 }}>
@@ -433,7 +457,7 @@ export default function CainCharacterPage() {
               <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
                 <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginBottom: 6 }}>PSYCHE BURST:</div>
                 <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 8 }}>Use your powers or gain +1D. Then mark one, or gain 1D3 SIN instead.</div>
-                <CircleRow count={3} filled={sheet.psycheBurst || 0} onToggle={i => update('psycheBurst', i < (sheet.psycheBurst || 0) ? i : i + 1)} size={22} color={C.dark} />
+                <CircleRow count={10} filled={sheet.psycheBurst || 0} onToggle={i => update('psycheBurst', i < (sheet.psycheBurst || 0) ? i : i + 1)} size={18} color={C.dark} dashedFrom={3} />
               </div>
             </SectionBox>
 
@@ -514,7 +538,7 @@ export default function CainCharacterPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 10 }}>
                 <div>
                   <div style={{ fontFamily: C.fontSans, fontSize: 11, fontWeight: 700 }}>XP:</div>
-                  <CircleRow count={10} filled={sheet.xp || 0} onToggle={i => update('xp', i < (sheet.xp || 0) ? i : i + 1)} size={16} />
+                  <CircleRow count={8} filled={sheet.xp || 0} onToggle={i => update('xp', i < (sheet.xp || 0) ? i : i + 1)} size={16} dashedFrom={4} />
                 </div>
                 <div>
                   <div style={{ fontFamily: C.fontSans, fontSize: 11, fontWeight: 700 }}>ADVANCES:</div>
