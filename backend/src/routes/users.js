@@ -41,7 +41,7 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
   try {
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { username, password: hashed, role: role || 'PLAYER' },
+      data: { username, password: hashed, role: role || 'PLAYER', email: `${username.toLowerCase()}@local` },
       select: { id: true, username: true, role: true, createdAt: true }
     });
     res.status(201).json(user);
