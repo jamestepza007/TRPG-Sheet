@@ -172,6 +172,25 @@ export default function CainGMSheet() {
           <div style={{ fontFamily: C.fontSans, fontSize: 8, letterSpacing: '0.3em', color: C.mid }}>RESTRICTED — CASTLE DIVISION INTERNAL USE ONLY</div>
         </div>
 
+        {/* ── Invite Code ── */}
+        <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 16 }}>
+          <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+            📋 INVITE CODE
+          </div>
+          <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontFamily: "'Courier New', monospace", fontSize: 15, fontWeight: 700, color: C.dark, letterSpacing: '0.05em', flex: 1 }}>
+              {campaign.inviteCode || '—'}
+            </div>
+            <button onClick={() => { navigator.clipboard.writeText(campaign.inviteCode || ''); }}
+              style={{ background: C.dark, color: '#f2ede3', border: 'none', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', padding: '5px 14px', cursor: 'pointer', textTransform: 'uppercase' }}>
+              COPY
+            </button>
+          </div>
+          <div style={{ padding: '0 12px 8px', fontFamily: C.font, fontSize: 8, color: C.muted }}>
+            Share with players to join · Updates are live
+          </div>
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
           {/* ── LEFT: The Hunt / Mission ── */}
