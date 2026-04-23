@@ -41,11 +41,21 @@ export default function CainDiceRoller({ sheet, system, characterName }) {
   const [selectedWebhook, setSelectedWebhook] = useState('');
 
   useEffect(() => {
-    api.get('/users/me/profile').then(res => {
-      const whs = res.data?.discordWebhooks || [];
-      setGlobalWebhooks(whs);
-      if (whs.length > 0) setSelectedWebhook(whs[0].url);
-    }).catch(() => {});
+    Promise.all([
+      api.get('/webhooks').catch(() => ({ data: [] })),
+      api.get('/users/me/profile').catch(() => ({ data: {} })),
+    ]).then(([gRes, pRes]) => {
+      const global = Array.isArray(gRes.data) ? gRes.data : [];
+      const personal = pRes.data?.discordWebhooks || [];
+      // Merge, deduplicate by url
+      const seen = new Set();
+      const merged = [...global, ...personal].filter(w => {
+        if (seen.has(w.url)) return false;
+        seen.add(w.url); return true;
+      });
+      setGlobalWebhooks(merged);
+      if (merged.length > 0) setSelectedWebhook(merged[0].url);
+    });
   }, []);
 
   const skills = [

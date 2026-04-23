@@ -514,10 +514,14 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
     Promise.all([
       api.get('/webhooks').catch(() => ({ data: [] })),
       api.get('/users/me/profile').catch(() => ({ data: {} })),
-    ]).then(([globalRes, profileRes]) => {
-      const global = globalRes.data || [];
-      const personal = profileRes.data?.discordWebhooks || [];
-      const merged = [...global, ...personal];
+    ]).then(([gRes, pRes]) => {
+      const global = Array.isArray(gRes.data) ? gRes.data : [];
+      const personal = pRes.data?.discordWebhooks || [];
+      const seen = new Set();
+      const merged = [...global, ...personal].filter(w => {
+        if (seen.has(w.url)) return false;
+        seen.add(w.url); return true;
+      });
       setGlobalWebhooks(merged);
       if (merged.length > 0) setSelectedWebhookUrl(merged[0].url);
     });
