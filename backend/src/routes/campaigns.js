@@ -48,7 +48,12 @@ router.put('/:id', requireRole('GM', 'ADMIN'), async (req, res) => {
     return res.status(403).json({ error: 'Forbidden' });
   const updated = await prisma.campaign.update({
     where: { id: req.params.id },
-    data: { name, description, ...(coverImage !== undefined && { coverImage }), ...(gmSheetData !== undefined && { gmSheetData }) }
+    data: {
+      ...(name !== undefined && { name }),
+      ...(description !== undefined && { description }),
+      ...(coverImage !== undefined && { coverImage }),
+      ...(gmSheetData !== undefined && { gmSheetData }),
+    }
   });
   res.json(updated);
 });
