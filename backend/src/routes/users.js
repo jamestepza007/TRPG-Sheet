@@ -46,8 +46,9 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
     });
     res.status(201).json(user);
   } catch (err) {
+    console.error('CREATE USER ERROR:', err.message, err.code);
     if (err.code === 'P2002') return res.status(409).json({ error: 'Username already exists' });
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message || 'Server error' });
   }
 });
 
