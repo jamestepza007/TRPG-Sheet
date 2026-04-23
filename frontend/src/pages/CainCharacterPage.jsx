@@ -301,7 +301,8 @@ export default function CainCharacterPage() {
 
   const psyche = sys.getPsyche(sheet.cat || 1);
   const injuries = sheet.injuries || 0;
-  const execMax = Math.max(1, 6 - injuries); // drops by 1 per injury
+  const resilient = sheet.resilientAgenda || false;
+  const execMax = resilient ? 6 : Math.max(1, 6 - injuries); // drops by 1 per injury (unless resilient agenda)
 
   const statusColor = { saved: '#2a5a2a', saving: '#5a4a00', dirty: '#888', error: '#8b0000' }[saveStatus];
   const statusLabel = { saved: '■ FILED', saving: '◌ FILING...', dirty: '○ UNSAVED', error: '✕ ERROR' }[saveStatus];
@@ -421,6 +422,16 @@ export default function CainCharacterPage() {
                   update('stress', 0);
                 }}
               />
+            {/* GUARDIAN: Painkiller toggle */}
+            <div onClick={() => update('resilientAgenda', !resilient)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '5px 8px', border: `1px solid ${resilient ? C.borderDark : C.border}`, background: resilient ? 'rgba(0,0,0,0.06)' : 'transparent', cursor: 'pointer', userSelect: 'none' }}>
+              <div style={{ width: 12, height: 12, border: `2px solid ${C.borderDark}`, background: resilient ? C.dark : 'transparent', flexShrink: 0, transition: 'background 0.15s' }} />
+              <div>
+                <span style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: C.dark }}>GUARDIAN</span>
+                <span style={{ fontFamily: C.font, fontSize: 8, color: C.muted }}> : Painkiller — Injuries do not reduce Execution max</span>
+              </div>
+            </div>
+
             <div style={{ marginTop: 12 }}>
               <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginBottom: 6 }}>INJURIES:</div>
               <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 6 }}>Each gives -1 stress. Suffer an injury when execution fills up. Clear all stress when gaining an injury.</div>
