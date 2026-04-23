@@ -546,11 +546,7 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
       const single = isSingleGroup(trimmed);
       const { min, max } = getMinMax(parsed.diceGroups, parsed.flatMod);
 
-      // ── Show result IMMEDIATELY — no waiting for network ──
-      setResult({ ...res, expr: trimmed, min, max });
-      setRolling(false);
-
-      // ── Fire-and-forget: log + Discord in background ──
+      // ── Fire-and-forget: log + Discord ──
       api.post('/dice/roll', {
         expression: trimmed, system, campaignId,
         sendToDiscord: sendToDiscord && !!selectedWebhookUrl,
@@ -559,17 +555,29 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
         characterName: characterName || null,
       }).catch(() => {});
 
-      if (single) {
-        const isCrit = res.total === max;
-        const isFail = res.total === min;
-        if (isCrit || isFail) {
-          const type = isCrit ? 'max' : 'min';
-          // Result is already shown above — let user see it briefly,
-          // then suspense screen takes over after 1 second
-          setTimeout(() => {
-            setCritical({ type, result: res.total, expr: trimmed, revealed: false });
-          }, 1000);
-        }
+      setRolling(false);
+
+      const isCrit = single && res.total === max;
+      const isFail = single && res.total === min;
+
+      if (isCrit || isFail) {
+        // ── CRITICAL: inject black DOM veil BEFORE React renders result ──
+        const veil = document.createElement('div');
+        veil.id = '__crit-veil__';
+        veil.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99998;';
+        document.body.appendChild(veil);
+        const type = isCrit ? 'max' : 'min';
+        setCritical({
+          type, result: res.total, expr: trimmed, revealed: false,
+          breakdown: res.breakdown, flatMod: res.flatMod, min, max,
+        });
+        // Remove veil after React mounts suspense screen
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          document.getElementById('__crit-veil__')?.remove();
+        }));
+      } else {
+        // Normal roll — show result immediately
+        setResult({ ...res, expr: trimmed, min, max });
       }
     } catch (err) {
       toast.error(err.message || 'Invalid expression');
