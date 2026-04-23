@@ -119,7 +119,7 @@ export const SYSTEMS = {
       // Blasphemy
       blasphemyDescription: '',
       blasphemyPassive: '',
-      observedPowers: ['', '', '', ''],
+      observedPowers: ['', '', '', '', ''],
       // Abilities (max 5)
       abilities: ['', '', '', '', ''],
       // XP & Advances

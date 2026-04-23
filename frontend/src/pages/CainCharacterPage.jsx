@@ -148,12 +148,22 @@ function CATDisplay({ cat, missions, onChange, onMissionsChange }) {
 }
 
 // ── Sin boxes ────────────────────────────────────────────────────
-function SinTrack({ sinBoxes, sinBoxesCrossed, onToggle }) {
-  const total = 9;
+function SinTrack({ sinBoxes, sinBoxesCrossed, sinTotal, onToggle, onTotalChange }) {
+  const total = sinTotal ?? 9;
   return (
     <div>
-      <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', color: C.red, marginBottom: 6 }}>SIN OVERFLOW TRACK</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: 4, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', color: C.red }}>SIN OVERFLOW TRACK</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginRight: 2 }}>slots:</div>
+          <button onClick={() => onTotalChange(Math.max(1, total - 1))}
+            style={{ width: 20, height: 20, border: `1px solid ${C.borderDark}`, background: 'transparent', cursor: 'pointer', fontFamily: C.font, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.dark }}>−</button>
+          <div style={{ fontFamily: C.fontSans, fontSize: 13, fontWeight: 900, minWidth: 16, textAlign: 'center', color: C.dark }}>{total}</div>
+          <button onClick={() => onTotalChange(Math.min(12, total + 1))}
+            style={{ width: 20, height: 20, border: `1px solid ${C.borderDark}`, background: 'transparent', cursor: 'pointer', fontFamily: C.font, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.dark }}>+</button>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${total}, 1fr)`, gap: 4, marginBottom: 8 }}>
         {Array.from({ length: total }, (_, i) => {
           const crossed = i < sinBoxesCrossed;
           const filled = !crossed && i < sinBoxes;
@@ -513,11 +523,12 @@ export default function CainCharacterPage() {
           {/* Sin */}
           <div>
             <SectionBox title="SIN TRACK">
-              <SinTrack sinBoxes={sheet.sinBoxes || 0} sinBoxesCrossed={sheet.sinBoxesCrossed || 0}
-                onToggle={i => {
-                  const cur = sheet.sinBoxes || 0;
-                  update('sinBoxes', i < cur ? i : i + 1);
-                }} />
+              <SinTrack
+                sinBoxes={sheet.sinBoxes || 0}
+                sinBoxesCrossed={sheet.sinBoxesCrossed || 0}
+                sinTotal={sheet.sinTotal ?? 9}
+                onToggle={i => { const cur = sheet.sinBoxes || 0; update('sinBoxes', i < cur ? i : i + 1); }}
+                onTotalChange={v => { update('sinTotal', v); if ((sheet.sinBoxes || 0) > v) update('sinBoxes', v); }} />
             </SectionBox>
 
             <SectionBox title="SIN MARKS">
@@ -541,7 +552,7 @@ export default function CainCharacterPage() {
           <SectionBox title="REGISTERED KIT">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <div style={{ fontFamily: C.fontSans, fontSize: 10, fontWeight: 700 }}>KIT POINTS:</div>
-              <CircleRow count={9} filled={sheet.kitPoints || 0} onToggle={i => update('kitPoints', i < (sheet.kitPoints || 0) ? i : i + 1)} size={14} />
+              <CircleRow count={9} filled={sheet.kitPoints || 0} onToggle={i => update('kitPoints', i < (sheet.kitPoints || 0) ? i : i + 1)} size={14} dashedFrom={5} />
             </div>
             <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>Spend KP to pull out the following items any time:</div>
             <textarea value={sheet.kitDescription || ''} onChange={e => update('kitDescription', e.target.value)} rows={6} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
