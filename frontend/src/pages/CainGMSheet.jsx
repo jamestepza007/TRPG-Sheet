@@ -161,6 +161,11 @@ export default function CainGMSheet() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => navigate('/')} style={{ background: 'transparent', border: `1px solid #666`, color: '#444', fontFamily: C.fontSans, fontSize: 9, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.1em' }}>← BACK</button>
+          <button onClick={async () => {
+            if (!confirm('Delete this campaign? This cannot be undone.')) return;
+            try { await api.delete(`/campaigns/${id}`); toast.success('Campaign deleted'); navigate('/'); }
+            catch { toast.error('Failed to delete'); }
+          }} style={{ background: C.red, border: 'none', color: '#fff', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.1em' }}>DELETE</button>
         </div>
       </div>
 
