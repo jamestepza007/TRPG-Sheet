@@ -151,7 +151,7 @@ export default function CainGMSheet() {
 
   return (
     <div style={{ background: '#d4cfc4', minHeight: '100vh', padding: 20 }}>
-      <style>{`* { box-sizing: border-box; } textarea { resize: vertical; }`}</style>
+      <style>{`* { box-sizing: border-box; } textarea, input, select { color: #1a1a1a !important; font-family: 'Courier New', monospace; } textarea::placeholder, input::placeholder { color: #999 !important; } .tension-bg { background: rgba(0,0,0,0.03); } `}</style>
 
       {/* Top bar */}
       <div style={{ maxWidth: 1100, margin: '0 auto 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -168,7 +168,7 @@ export default function CainGMSheet() {
 
         {/* Header */}
         <div style={{ textAlign: 'center', borderBottom: `3px solid ${C.dark}`, paddingBottom: 8, marginBottom: 16 }}>
-          <div style={{ fontFamily: C.fontSans, fontSize: 18, fontWeight: 900, letterSpacing: '0.3em' }}>CAIN — ADMIN FIELD DOCUMENTATION</div>
+          <div style={{ fontFamily: C.fontSans, fontSize: 20, fontWeight: 900, letterSpacing: '0.3em', color: C.dark }}>CAIN — ADMIN FIELD DOCUMENTATION</div>
           <div style={{ fontFamily: C.fontSans, fontSize: 8, letterSpacing: '0.3em', color: C.mid }}>RESTRICTED — CASTLE DIVISION INTERNAL USE ONLY</div>
         </div>
 
@@ -193,12 +193,14 @@ export default function CainGMSheet() {
               {/* Tension */}
               <div style={{ marginBottom: 12, padding: 10, border: `1px solid ${C.borderDark}`, background: 'rgba(0,0,0,0.04)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <div style={{ fontFamily: C.fontSans, fontSize: 14, fontWeight: 900, letterSpacing: '0.2em' }}>TENSION</div>
+                  <div style={{ fontFamily: C.fontSans, fontSize: 14, fontWeight: 900, letterSpacing: '0.2em', color: C.dark }}>TENSION</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted }}>Max:</div>
-                    <input type="number" value={mission.tensionMax || 3} min={1} max={12}
-                      onChange={e => updateMission('tensionMax', parseInt(e.target.value) || 3)}
-                      style={{ width: 36, fontFamily: C.font, fontSize: 12, textAlign: 'center', background: 'transparent', border: `1px solid ${C.border}`, outline: 'none' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <button onClick={() => updateMission('tensionMax', Math.max(1, (mission.tensionMax||3)-1))} style={{ width:20,height:20,border:`1px solid ${C.border}`,background:'transparent',cursor:'pointer',fontFamily:C.font,fontSize:13,color:C.dark }}>−</button>
+                      <span style={{ fontFamily:C.font,fontSize:13,fontWeight:700,minWidth:18,textAlign:'center',color:C.dark }}>{mission.tensionMax||3}</span>
+                      <button onClick={() => updateMission('tensionMax', (mission.tensionMax||3)+1)} style={{ width:20,height:20,border:`1px solid ${C.border}`,background:'transparent',cursor:'pointer',fontFamily:C.font,fontSize:13,color:C.dark }}>+</button>
+                    </div>
                   </div>
                 </div>
                 <SlashTrack value={mission.tension || 0} max={mission.tensionMax || 3}
@@ -209,12 +211,14 @@ export default function CainGMSheet() {
               {/* Pressure */}
               <div style={{ marginBottom: 12, padding: 10, border: `2px solid ${C.dark}`, background: 'rgba(0,0,0,0.06)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <div style={{ fontFamily: C.fontSans, fontSize: 14, fontWeight: 900, letterSpacing: '0.2em' }}>PRESSURE</div>
+                  <div style={{ fontFamily: C.fontSans, fontSize: 14, fontWeight: 900, letterSpacing: '0.2em', color: C.dark }}>PRESSURE</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted }}>Max:</div>
-                    <input type="number" value={mission.pressureMax || 6} min={1} max={20}
-                      onChange={e => updateMission('pressureMax', parseInt(e.target.value) || 6)}
-                      style={{ width: 36, fontFamily: C.font, fontSize: 12, textAlign: 'center', background: 'transparent', border: `1px solid ${C.border}`, outline: 'none' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <button onClick={() => updateMission('pressureMax', Math.max(1, (mission.pressureMax||6)-1))} style={{ width:20,height:20,border:`1px solid ${C.border}`,background:'transparent',cursor:'pointer',fontFamily:C.font,fontSize:13,color:C.dark }}>−</button>
+                      <span style={{ fontFamily:C.font,fontSize:13,fontWeight:700,minWidth:18,textAlign:'center',color:C.dark }}>{mission.pressureMax||6}</span>
+                      <button onClick={() => updateMission('pressureMax', (mission.pressureMax||6)+1)} style={{ width:20,height:20,border:`1px solid ${C.border}`,background:'transparent',cursor:'pointer',fontFamily:C.font,fontSize:13,color:C.dark }}>+</button>
+                    </div>
                   </div>
                 </div>
                 <SlashTrack value={mission.pressure || 0} max={mission.pressureMax || 6}

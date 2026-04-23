@@ -210,7 +210,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* DW badge top-right */}
-                <span className="badge badge-fantasy" style={{ position: 'absolute', top: 8, right: 8, fontSize: 9, zIndex: 2 }}>DW</span>
+                <span className="badge badge-fantasy" style={{ position: 'absolute', top: 8, right: 8, fontSize: 9, zIndex: 2 }}>{char.system === 'CAIN' ? 'CAIN' : 'DW'}</span>
 
                 {/* Info overlaid at bottom */}
                 <div style={{ position: 'relative', zIndex: 1, padding: '100px 14px 14px' }}>

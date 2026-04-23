@@ -56,6 +56,7 @@ model Campaign {
   gm          User       @relation("GMCampaigns", fields: [gmId], references: [id], onDelete: Cascade)
   inviteCode  String     @unique @default(cuid())
   coverImage  String?
+  gmSheetData Json?
   party       Party?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
