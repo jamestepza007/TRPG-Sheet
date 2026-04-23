@@ -93,3 +93,11 @@ model DiceLog {
   sentToDiscord Boolean    @default(false)
   createdAt     DateTime   @default(now())
 }
+
+model GlobalWebhook {
+  id        String   @id @default(cuid())
+  label     String
+  url       String
+  createdBy String
+  createdAt DateTime @default(now())
+}

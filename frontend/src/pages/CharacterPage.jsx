@@ -79,7 +79,7 @@ function PortraitCropModal({ imageUrl, onConfirm, onCancel }) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#161616', border: '1px solid #3d2510', borderRadius: 10, padding: 28, width: PW + 56, boxShadow: '0 0 60px rgba(201,168,76,0.12)' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: 16, color: acc, marginBottom: 4 }}>🖼 Crop Portrait</div>
-        <div style={{ color: '#555', fontSize: 12, marginBottom: 14 }}>ลากเพื่อเลื่อน · ใช้ Slider ด้านล่างเพื่อ Zoom</div>
+        <div style={{ color: '#555', fontSize: 12, marginBottom: 14 }}>Drag to reposition · Use slider to zoom</div>
 
         {/* Canvas — same ratio as portrait display */}
         <div style={{ position: 'relative', width: PW, height: PH, overflow: 'hidden', borderRadius: 8, border: `2px solid ${acc}44`, cursor: drag ? 'grabbing' : 'grab', margin: '0 auto', userSelect: 'none' }}
@@ -102,11 +102,11 @@ function PortraitCropModal({ imageUrl, onConfirm, onCancel }) {
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={handleConfirm}
             style={{ flex: 1, background: acc, color: '#000', border: 'none', borderRadius: 6, padding: '11px', fontFamily: 'Cinzel, serif', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em' }}>
-            ✓ ใช้รูปนี้
+            ✓ Use this
           </button>
           <button onClick={onCancel}
             style={{ flex: 1, background: 'transparent', border: '1px solid #2a2a2a', color: '#666', borderRadius: 6, padding: '11px', fontFamily: 'Cinzel, serif', fontSize: 13, cursor: 'pointer' }}>
-            ยกเลิก
+            Cancel
           </button>
         </div>
       </div>
@@ -151,7 +151,7 @@ function VitalsBar({ label, current, max, color, step = 1, onChangeCurrent, onCh
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {/* Current */}
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, color: '#777', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>ปัจจุบัน</div>
+          <div style={{ fontSize: 12, color: '#777', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Current</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button onClick={decrease}
               style={{ background: '#1a1a1a', border: `1px solid ${color}44`, color: acc, width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}
@@ -171,7 +171,7 @@ function VitalsBar({ label, current, max, color, step = 1, onChangeCurrent, onCh
 
         {/* Max */}
         <div style={{ flex: '0 0 80px' }}>
-          <div style={{ fontSize: 12, color: '#777', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>สูงสุด</div>
+          <div style={{ fontSize: 12, color: '#777', fontFamily: 'Cinzel, serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Max</div>
           <input type="number" value={max ?? 0}
             step={step}
             onChange={e => onChangeMax(parseFloat(e.target.value) || 0)}

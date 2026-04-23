@@ -32,7 +32,7 @@ function rollParsed({ diceGroups, flatMod }) {
 }
 
 function isSingleGroup(expr) {
-  return /^([+-]?)(\d+)d(\d+)([+-]\d+)?$/.test(expr.replace(/\s+/g, '').toLowerCase());
+  return /^([+-]?)(\d+)d(\d+)([+-]\d+)?$/.test(expr.replace(/\s+/g,'').toLowerCase());
 }
 
 function getMinMax(diceGroups, flatMod) {
@@ -46,83 +46,75 @@ function getMinMax(diceGroups, flatMod) {
 
 // ── Message pools ────────────────────────────────────────────────
 const LEGENDARY = [
-  "The heavens smile upon you",
+  "The heavens split open for you alone",
   "Fortune blesses your hand this day",
-  "The gods themselves applaud your feat",
+  "The gods themselves rise to applaud",
   "Fate has chosen you as its champion",
-  "Stars align in your favor, hero",
-  "Even your enemies must acknowledge greatness",
-  "Legend remembers moments like this",
-  "The dice sing with golden light",
+  "Stars realign in your favor, hero",
+  "Even your enemies must bow in awe",
+  "Legend remembers this moment forever",
+  "The dice sing with blinding gold",
   "Destiny was always yours to claim",
-  "In a thousand tales, bards will speak of this",
+  "A thousand bards will sing of this",
   "The universe bends to your will",
-  "A triumph worthy of the ages",
-  "Your name shall echo in the halls of glory",
-  "Even the fates pause to witness your victory",
-  "Fortune herself weeps tears of joy for you",
+  "History pauses to witness your triumph",
+  "Your name echoes through the halls of glory",
+  "The fates themselves weep tears of joy",
+  "Fortune kneels before you this night",
 ];
 const CATASTROPHIC = [
   "The void laughs at your suffering",
-  "Even the dice weep for you",
-  "Some fates are worse than death",
-  "The stars have turned their backs on you",
-  "Perhaps you should have stayed in bed",
-  "Darkness swallows your hope whole",
-  "The gods look away in embarrassment",
-  "Misfortune has chosen you as its student",
-  "A tragedy so profound, bards refuse to sing it",
-  "Even your allies wince in secondhand shame",
-  "Fortune has abandoned you in your hour of need",
-  "The dice remember every insult you ever gave",
-  "Somewhere, a villain smiles without knowing why",
-  "History will record this as a cautionary tale",
-  "Despair is the only honest response here",
+  "Not even the dice can save you now",
+  "Some fates are crueler than death",
+  "The stars have forsaken you entirely",
+  "You should have stayed in bed today",
+  "Darkness swallows the last of your hope",
+  "The gods avert their eyes in shame",
+  "Misfortune has claimed you as its own",
+  "Bards refuse to immortalize this moment",
+  "Your allies wince in secondhand agony",
+  "Fortune has abandoned you completely",
+  "The dice remember every insult you gave",
+  "A villain smiles somewhere, without knowing why",
+  "History records this as a warning to others",
+  "Even despair is too kind a word for this",
 ];
 
-// ── Audio engine using Web Audio API ────────────────────────────
+// ── Audio ────────────────────────────────────────────────────────
 function playLegendarySound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
-
-    // Choir-like swell
-    [261.63, 329.63, 392.00, 523.25, 659.25].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.18, now + 0.1 + i * 0.08);
-      gain.gain.linearRampToValueAtTime(0.12, now + 0.6 + i * 0.08);
-      gain.gain.linearRampToValueAtTime(0, now + 2.5);
-      osc.start(now + i * 0.06);
-      osc.stop(now + 2.5);
-    });
-
-    // Impact hit
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.02));
-    const src = ctx.createBufferSource();
-    const gainN = ctx.createGain();
-    src.buffer = buf; src.connect(gainN); gainN.connect(ctx.destination);
-    gainN.gain.setValueAtTime(0.5, now);
-    gainN.gain.linearRampToValueAtTime(0, now + 0.12);
-    src.start(now);
-
-    // Sparkle dings
-    [1047, 1319, 1568, 2093].forEach((f, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
+    // Ascending heavenly choir
+    [196, 261.63, 329.63, 392, 523.25, 659.25, 783.99].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
       o.connect(g); g.connect(ctx.destination);
-      o.type = 'triangle'; o.frequency.value = f;
-      g.gain.setValueAtTime(0, now + 0.3 + i * 0.12);
-      g.gain.linearRampToValueAtTime(0.15, now + 0.35 + i * 0.12);
-      g.gain.linearRampToValueAtTime(0, now + 0.8 + i * 0.12);
-      o.start(now + 0.3 + i * 0.12);
-      o.stop(now + 1.5);
+      o.type = i % 2 === 0 ? 'sine' : 'triangle';
+      o.frequency.setValueAtTime(f * 0.5, now + i * 0.07);
+      o.frequency.linearRampToValueAtTime(f, now + i * 0.07 + 0.15);
+      g.gain.setValueAtTime(0, now + i * 0.07);
+      g.gain.linearRampToValueAtTime(0.14, now + i * 0.07 + 0.12);
+      g.gain.linearRampToValueAtTime(0.07, now + i * 0.07 + 0.5);
+      g.gain.linearRampToValueAtTime(0, now + 3);
+      o.start(now + i * 0.07); o.stop(now + 3.5);
+    });
+    // Impact boom
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(ctx.sampleRate*0.025));
+    const src = ctx.createBufferSource(), gn = ctx.createGain();
+    src.buffer = buf; src.connect(gn); gn.connect(ctx.destination);
+    gn.gain.setValueAtTime(0.8, now); gn.gain.linearRampToValueAtTime(0, now+0.18);
+    src.start(now);
+    // Sparkle cascade
+    [1047, 1175, 1319, 1568, 1760, 2093, 2349].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine'; o.frequency.value = f;
+      const t = now + 0.25 + i * 0.1;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.18, t+0.04);
+      g.gain.linearRampToValueAtTime(0, t+0.35);
+      o.start(t); o.stop(t+0.4);
     });
   } catch {}
 }
@@ -131,94 +123,105 @@ function playCatastrophicSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
-
-    // Deep ominous drone descending
-    [110, 82.41, 65.41, 55].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq * 1.5, now + i * 0.15);
-      osc.frequency.linearRampToValueAtTime(freq, now + i * 0.15 + 0.4);
-      gain.gain.setValueAtTime(0, now + i * 0.15);
-      gain.gain.linearRampToValueAtTime(0.12, now + i * 0.15 + 0.15);
-      gain.gain.linearRampToValueAtTime(0.08, now + i * 0.15 + 0.5);
-      gain.gain.linearRampToValueAtTime(0, now + 2.8);
-      osc.start(now + i * 0.15);
-      osc.stop(now + 3);
+    // Descending doom drone
+    [110, 82.41, 73.42, 65.41, 55, 41.2].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = i % 2 === 0 ? 'sawtooth' : 'square';
+      o.frequency.setValueAtTime(f * 2.5, now + i * 0.18);
+      o.frequency.linearRampToValueAtTime(f * 0.8, now + i * 0.18 + 0.5);
+      g.gain.setValueAtTime(0, now + i * 0.18);
+      g.gain.linearRampToValueAtTime(0.1, now + i * 0.18 + 0.15);
+      g.gain.linearRampToValueAtTime(0.06, now + i * 0.18 + 0.6);
+      g.gain.linearRampToValueAtTime(0, now + 3.5);
+      o.start(now + i * 0.18); o.stop(now + 4);
     });
-
-    // Heavy thud
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.06));
-    const src = ctx.createBufferSource();
-    const gN = ctx.createGain();
-    src.buffer = buf; src.connect(gN); gN.connect(ctx.destination);
-    gN.gain.setValueAtTime(0.7, now);
-    gN.gain.linearRampToValueAtTime(0, now + 0.35);
+    // Heavy crash
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.4, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(ctx.sampleRate*0.09));
+    const src = ctx.createBufferSource(), gn = ctx.createGain();
+    src.buffer = buf; src.connect(gn); gn.connect(ctx.destination);
+    gn.gain.setValueAtTime(1.0, now); gn.gain.linearRampToValueAtTime(0, now+0.45);
     src.start(now);
-
-    // Dissonant screech
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.connect(gain2); gain2.connect(ctx.destination);
-    osc2.type = 'sawtooth';
-    osc2.frequency.setValueAtTime(440, now + 0.1);
-    osc2.frequency.linearRampToValueAtTime(220, now + 0.6);
-    gain2.gain.setValueAtTime(0.08, now + 0.1);
-    gain2.gain.linearRampToValueAtTime(0, now + 0.7);
-    osc2.start(now + 0.1);
-    osc2.stop(now + 0.8);
+    // Dissonant wail dying out
+    [[370, 349], [494, 466], [622, 587]].forEach(([f1, f2], i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sawtooth';
+      const t = now + 0.15 + i * 0.12;
+      o.frequency.setValueAtTime(f1, t);
+      o.frequency.linearRampToValueAtTime(f2 * 0.5, t + 0.9);
+      g.gain.setValueAtTime(0.08, t); g.gain.linearRampToValueAtTime(0, t + 1.0);
+      o.start(t); o.stop(t + 1.1);
+    });
   } catch {}
 }
 
-// ── Critical Overlay ────────────────────────────────────────────
-const LEGENDARY_CSS = `
+// ── Critical Overlay ─────────────────────────────────────────────
+const CRIT_STYLES = `
   @keyframes fadeInOv{from{opacity:0}to{opacity:1}}
-  @keyframes critScale{0%{transform:scale(0) rotate(-20deg);opacity:0}50%{transform:scale(1.25) rotate(4deg);opacity:1}75%{transform:scale(0.92) rotate(-2deg)}100%{transform:scale(1) rotate(0)}}
-  @keyframes numGlow{0%,100%{text-shadow:0 0 30px #ffd700,0 0 80px #ffd700,0 0 140px #c9a84c}50%{text-shadow:0 0 60px #fff,0 0 120px #ffd700,0 0 200px #ffaa00,0 0 280px #ff8800}}
-  @keyframes msgFade{0%{opacity:0;letter-spacing:0.3em}100%{opacity:1;letter-spacing:0.04em}}
-  @keyframes iconSpin{0%{transform:rotate(0) scale(0);opacity:0}60%{transform:rotate(720deg) scale(1.3);opacity:1}100%{transform:rotate(720deg) scale(1)}}
-  @keyframes burst{0%{transform:translate(-50%,-50%) scale(0);opacity:1}100%{transform:translate(-50%,-50%) scale(4);opacity:0}}
-  @keyframes float{0%{transform:translateY(0) rotate(var(--r)) scale(1);opacity:1}100%{transform:translateY(calc(var(--dy))) rotate(calc(var(--r) + 360deg)) scale(0);opacity:0}}
-  @keyframes bgPulse{0%,100%{background:rgba(0,0,0,0.92)}50%{background:rgba(20,12,0,0.96)}}
-  .crit-num{animation:critScale .7s cubic-bezier(.175,.885,.32,1.275) forwards,numGlow 2s ease-in-out .7s infinite}
-  .crit-msg{animation:msgFade 0.8s ease 1.2s both}
-  .crit-icon{animation:iconSpin 0.9s cubic-bezier(.175,.885,.32,1.275) forwards}
-  .burst-ring{position:absolute;top:50%;left:50%;width:200px;height:200px;border-radius:50%;border:3px solid #ffd700;animation:burst 0.8s ease-out forwards}
+
+  /* LEGENDARY */
+  @keyframes numLand{0%{transform:scale(0) rotate(-25deg) translateY(-60px);opacity:0}55%{transform:scale(1.3) rotate(5deg) translateY(0);opacity:1}72%{transform:scale(0.88) rotate(-2deg)}85%{transform:scale(1.08) rotate(1deg)}100%{transform:scale(1) rotate(0)}}
+  @keyframes numPulse{0%,100%{text-shadow:0 0 40px #ffd700,0 0 100px #ffd700,0 0 180px #c9a84c}50%{text-shadow:0 0 80px #fff,0 0 160px #ffd700,0 0 260px #ffaa00,0 0 350px #ff8800}}
+  @keyframes bgSwell{0%{background:rgba(0,0,0,0.95)}30%{background:rgba(25,14,0,0.98)}70%{background:rgba(15,8,0,0.97)}100%{background:rgba(0,0,0,0.95)}}
+  @keyframes ring{0%{transform:translate(-50%,-50%) scale(0);opacity:0.9}100%{transform:translate(-50%,-50%) scale(3.5);opacity:0}}
+  @keyframes floatUp{0%{opacity:1;transform:translateY(0) rotate(var(--r)) scale(1)}100%{opacity:0;transform:translateY(var(--dy)) rotate(calc(var(--r) + 540deg)) scale(0.2)}}
+  @keyframes iconBounce{0%{transform:scale(0) rotate(-180deg);opacity:0}60%{transform:scale(1.4) rotate(20deg);opacity:1}80%{transform:scale(0.85) rotate(-5deg)}100%{transform:scale(1) rotate(0)}}
+  @keyframes msgSlide{0%{opacity:0;letter-spacing:0.5em;transform:translateY(16px)}100%{opacity:1;letter-spacing:0.04em;transform:translateY(0)}}
+  @keyframes shimmerBg{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+
+  /* CATASTROPHIC */
+  @keyframes numCrash{0%{transform:translateY(-150px) scale(2) rotate(8deg);opacity:0}45%{transform:translateY(18px) scale(0.9) rotate(-3deg);opacity:1}65%{transform:translateY(-8px) scale(1.04)}80%{transform:translateY(4px) scale(0.97)}100%{transform:translateY(0) scale(1) rotate(0)}}
+  @keyframes failPulse{0%,100%{text-shadow:0 0 20px #8b0000,0 0 50px #8b0000}33%{text-shadow:0 0 5px #300,0 0 15px #300}66%{text-shadow:0 0 60px #ff0000,0 0 120px #8b0000}}
+  @keyframes screenShake{0%,100%{transform:translate(0,0) rotate(0)}10%{transform:translate(-12px,6px) rotate(-0.5deg)}20%{transform:translate(10px,-8px) rotate(0.5deg)}30%{transform:translate(-8px,10px) rotate(-0.3deg)}40%{transform:translate(10px,-6px) rotate(0.3deg)}50%{transform:translate(-6px,8px) rotate(-0.5deg)}60%{transform:translate(8px,-4px) rotate(0.2deg)}70%{transform:translate(-8px,6px) rotate(-0.4deg)}80%{transform:translate(6px,8px) rotate(0.3deg)}90%{transform:translate(-4px,-6px) rotate(-0.2deg)}}
+  @keyframes flashRed{0%{background:rgba(0,0,0,0.95)}8%{background:rgba(80,0,0,0.98)}18%{background:rgba(0,0,0,0.97)}28%{background:rgba(50,0,0,0.98)}100%{background:rgba(0,0,0,0.97)}}
+  @keyframes floatDown{0%{opacity:0.8;transform:translateY(0) rotate(var(--r))}100%{opacity:0;transform:translateY(var(--dy)) rotate(calc(var(--r) + 200deg)) scale(0.3)}}
+  @keyframes failMsg{0%{opacity:0;transform:translateY(24px)}100%{opacity:1;transform:translateY(0)}}
+  @keyframes cracks{0%{opacity:0;transform:scale(0.3)}100%{opacity:0.12;transform:scale(1)}}
+
+  .leg-num{animation:numLand .75s cubic-bezier(.175,.885,.32,1.275) forwards,numPulse 2.5s ease-in-out .75s infinite}
+  .leg-icon{animation:iconBounce .8s cubic-bezier(.175,.885,.32,1.275) .1s both}
+  .leg-msg{animation:msgSlide 0.9s ease 1.2s both}
+  .leg-bg{animation:bgSwell 4s ease-in-out infinite}
+  .fail-num{animation:numCrash .65s cubic-bezier(.175,.885,.32,1.275) forwards,failPulse 2.8s ease-in-out .65s infinite}
+  .fail-shake{animation:screenShake .55s ease .05s}
+  .fail-msg{animation:failMsg .7s ease 1s both}
+  .fp-up{animation:floatUp var(--dur) ease-out var(--delay) forwards}
+  .fp-dn{animation:floatDown var(--dur) ease-in var(--delay) forwards}
+  .ring{position:absolute;top:50%;left:50%;border-radius:50%;border:3px solid;animation:ring .9s ease-out forwards}
+  .crack{position:absolute;inset:0;animation:cracks .5s ease .1s both}
 `;
 
-const CATA_CSS = `
-  @keyframes fadeInOv{from{opacity:0}to{opacity:1}}
-  @keyframes failCrash{0%{transform:translateY(-120px) scale(1.5) rotate(5deg);opacity:0}60%{transform:translateY(12px) scale(0.95) rotate(-1deg);opacity:1}80%{transform:translateY(-4px) scale(1.02)}100%{transform:translateY(0) scale(1) rotate(0)}}
-  @keyframes failGlow{0%,100%{text-shadow:0 0 20px #8b0000,0 0 50px #8b0000}50%{text-shadow:0 0 40px #ff0000,0 0 80px #8b0000,0 0 120px #400000}}
-  @keyframes failMsg{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
-  @keyframes shake{0%,100%{transform:translate(0,0)}10%{transform:translate(-8px,4px)}20%{transform:translate(8px,-4px)}30%{transform:translate(-6px,6px)}40%{transform:translate(6px,-2px)}50%{transform:translate(-4px,4px)}60%{transform:translate(4px,-6px)}70%{transform:translate(-6px,2px)}80%{transform:translate(6px,4px)}90%{transform:translate(-2px,-4px)}}
-  @keyframes bgFlash{0%{background:rgba(0,0,0,0.92)}10%{background:rgba(60,0,0,0.96)}20%{background:rgba(0,0,0,0.95)}100%{background:rgba(0,0,0,0.95)}}
-  @keyframes crack{0%{opacity:0;transform:scale(0.5)}100%{opacity:0.15;transform:scale(1)}}
-  @keyframes darkFloat{0%{transform:translateY(0) scale(1);opacity:0.8}100%{transform:translateY(calc(var(--dy))) scale(0);opacity:0}}
-  .fail-num{animation:failCrash .6s cubic-bezier(.175,.885,.32,1.275) forwards,failGlow 2.2s ease-in-out .6s infinite}
-  .fail-msg{animation:failMsg 0.7s ease 1s both}
-  .fail-shake{animation:shake 0.5s ease 0.1s}
-`;
+function LegendaryParticle({ i }) {
+  const colors = ['#ffd700','#ffcc00','#fff','#c9a84c','#ffe066','#ffaa00','#fffacd'];
+  return <div className="fp-up" style={{
+    position: 'absolute', borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+    width: 4+Math.random()*12, height: 4+Math.random()*12,
+    background: colors[i % colors.length],
+    left: `${10+Math.random()*80}%`, top: `${15+Math.random()*70}%`,
+    '--r': `${Math.random()*360}deg`,
+    '--dy': `${-(100+Math.random()*220)}px`,
+    '--dur': `${0.9+Math.random()*1.4}s`,
+    '--delay': `${Math.random()*0.5}s`,
+    zIndex: 1,
+  }} />;
+}
 
-function Particle({ isCrit }) {
-  const style = {
-    position: 'absolute',
-    borderRadius: isCrit ? '50%' : '2px',
-    '--r': `${Math.random() * 360}deg`,
-    '--dy': `${isCrit ? -(80 + Math.random() * 200) : (80 + Math.random() * 200)}px`,
-    width: 4 + Math.random() * 10,
-    height: 4 + Math.random() * 10,
-    background: isCrit
-      ? ['#ffd700','#ffcc00','#fff','#c9a84c','#ffe066','#ffaa00'][Math.floor(Math.random() * 6)]
-      : ['#4a0000','#8b0000','#2a2a2a','#1a0000','#600000'][Math.floor(Math.random() * 5)],
-    left: `${20 + Math.random() * 60}%`,
-    top: `${20 + Math.random() * 60}%`,
-    animation: `float ${0.8 + Math.random() * 1.4}s ease-out ${Math.random() * 0.5}s forwards`,
-  };
-  return <div style={style} />;
+function CatastrophicParticle({ i }) {
+  const colors = ['#3a0000','#6b0000','#1a0000','#500000','#2a2a2a','#8b0000'];
+  return <div className="fp-dn" style={{
+    position: 'absolute', borderRadius: '2px',
+    width: 3+Math.random()*8, height: 3+Math.random()*8,
+    background: colors[i % colors.length],
+    left: `${5+Math.random()*90}%`, top: `${5+Math.random()*50}%`,
+    '--r': `${Math.random()*360}deg`,
+    '--dy': `${100+Math.random()*200}px`,
+    '--dur': `${0.7+Math.random()*1.2}s`,
+    '--delay': `${Math.random()*0.4}s`,
+    zIndex: 1,
+  }} />;
 }
 
 function CriticalOverlay({ type, result, expr, onDismiss }) {
@@ -229,86 +232,81 @@ function CriticalOverlay({ type, result, expr, onDismiss }) {
   });
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      if (isCrit) playLegendarySound();
-      else playCatastrophicSound();
-    }, 100);
+    const t = setTimeout(() => isCrit ? playLegendarySound() : playCatastrophicSound(), 80);
     return () => clearTimeout(t);
   }, []);
 
   if (isCrit) return (
-    <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', animation:'bgPulse 3s ease-in-out infinite, fadeInOv 0.3s ease', cursor:'pointer' }}
+    <div className="leg-bg" style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', animation:'fadeInOv 0.3s ease' }}
       onClick={onDismiss}>
-      <style>{LEGENDARY_CSS}</style>
+      <style>{CRIT_STYLES}</style>
 
       {/* Burst rings */}
-      {[0, 0.15, 0.3].map((d, i) => (
-        <div key={i} className="burst-ring" style={{ animationDelay: `${d}s`, borderColor: i === 0 ? '#ffd700' : i === 1 ? '#c9a84c' : '#fff6', width: 200 + i * 80, height: 200 + i * 80 }} />
+      {[0,0.18,0.36,0.55].map((d,i) => (
+        <div key={i} className="ring" style={{
+          width: 160+i*100, height: 160+i*100,
+          borderColor: ['#ffd700','#c9a84c','#fff5','#ffd70044'][i],
+          animationDelay: `${d}s`,
+        }} />
       ))}
 
       {/* Particles */}
-      {Array.from({ length: 40 }, (_, i) => <Particle key={i} isCrit={true} />)}
+      {Array.from({length:50},(_,i) => <LegendaryParticle key={i} i={i} />)}
+
+      {/* Shimmer background gradient */}
+      <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1a0a00,#000,#0a0500,#000)', backgroundSize:'400% 400%', animation:'shimmerBg 3s ease infinite', zIndex:0, opacity:0.6 }} />
 
       {/* Content */}
-      <div style={{ position:'relative', zIndex:2, textAlign:'center', padding:'0 48px', maxWidth:600 }}>
-        <div className="crit-icon" style={{ fontSize:64, marginBottom:16, display:'block' }}>✨⚔✨</div>
-
-        <div style={{ fontFamily:'Cinzel, serif', fontSize:15, color:'#ffd700', letterSpacing:'0.4em', marginBottom:24, textTransform:'uppercase', opacity:0.9 }}>
+      <div style={{ position:'relative', zIndex:2, textAlign:'center', padding:'0 56px', maxWidth:640 }}>
+        <div className="leg-icon" style={{ fontSize:72, marginBottom:20, display:'block', lineHeight:1 }}>✨⚔✨</div>
+        <div style={{ fontFamily:'Cinzel, serif', fontSize:14, color:'#ffd700', letterSpacing:'0.5em', marginBottom:28, textTransform:'uppercase', opacity:0.85 }}>
           Legendary Roll
         </div>
-
-        <div className="crit-num" style={{ fontFamily:'Cinzel, serif', fontSize:160, color:'#ffd700', lineHeight:1, fontWeight:700 }}>
+        <div className="leg-num" style={{ fontFamily:'Cinzel, serif', fontSize:180, color:'#ffd700', lineHeight:1, fontWeight:700 }}>
           {result}
         </div>
-
-        <div style={{ fontFamily:'Share Tech Mono, monospace', color:'#5a4a20', fontSize:14, marginTop:14, letterSpacing:'0.1em' }}>
+        <div style={{ fontFamily:'Share Tech Mono, monospace', color:'#3a2a00', fontSize:15, marginTop:16, letterSpacing:'0.12em' }}>
           {expr}
         </div>
-
-        <div className="crit-msg" style={{ color:'#c9a84c', fontSize:20, marginTop:28, fontFamily:'Crimson Text, serif', fontStyle:'italic', letterSpacing:'0.04em', lineHeight:1.6 }}>
+        <div className="leg-msg" style={{ color:'#c9a84c', fontSize:22, marginTop:32, fontFamily:'Crimson Text, serif', fontStyle:'italic', lineHeight:1.7 }}>
           "{msg}"
         </div>
-
-        <div style={{ color:'#2a2a2a', fontSize:11, marginTop:48, fontFamily:'Cinzel, serif', letterSpacing:'0.2em', textTransform:'uppercase' }}>
+        <div style={{ color:'#1a1a1a', fontSize:11, marginTop:52, fontFamily:'Cinzel, serif', letterSpacing:'0.25em', textTransform:'uppercase' }}>
           tap anywhere to dismiss
         </div>
       </div>
     </div>
   );
 
-  // CATASTROPHIC
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', animation:'bgFlash 0.5s ease forwards, fadeInOv 0.2s ease', cursor:'pointer' }}
+    <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', animation:'flashRed 0.6s ease forwards, fadeInOv 0.2s ease' }}
       onClick={onDismiss}>
-      <style>{CATA_CSS}</style>
-
-      {/* Dark particles falling */}
-      {Array.from({ length: 30 }, (_, i) => <Particle key={i} isCrit={false} />)}
+      <style>{CRIT_STYLES}</style>
 
       {/* Crack overlay */}
-      <div style={{ position:'absolute', inset:0, zIndex:1, animation:'crack 0.4s ease 0.1s both', pointerEvents:'none', background:'radial-gradient(ellipse at center, transparent 30%, #1a0000 100%)' }} />
+      <div className="crack" style={{ background:'radial-gradient(ellipse at center, transparent 20%, #1a0000 100%)', zIndex:1, pointerEvents:'none' }} />
+
+      {/* Particles */}
+      {Array.from({length:35},(_,i) => <CatastrophicParticle key={i} i={i} />)}
 
       {/* Content */}
-      <div className="fail-shake" style={{ position:'relative', zIndex:2, textAlign:'center', padding:'0 48px', maxWidth:600 }}>
-        <div style={{ fontSize:64, marginBottom:16, filter:'grayscale(1) brightness(0.3)', animation:'failCrash 0.6s ease forwards' }}>💀☠💀</div>
-
-        <div style={{ fontFamily:'Cinzel, serif', fontSize:15, color:'#5a0000', letterSpacing:'0.4em', marginBottom:24, textTransform:'uppercase' }}>
+      <div className="fail-shake" style={{ position:'relative', zIndex:2, textAlign:'center', padding:'0 56px', maxWidth:640 }}>
+        <div style={{ fontSize:72, marginBottom:20, lineHeight:1, filter:'grayscale(1) brightness(0.25)', animation:'numLand 0.6s ease forwards' }}>
+          💀☠💀
+        </div>
+        <div style={{ fontFamily:'Cinzel, serif', fontSize:14, color:'#4a0000', letterSpacing:'0.5em', marginBottom:28, textTransform:'uppercase' }}>
           Catastrophic Failure
         </div>
-
-        <div className="fail-num" style={{ fontFamily:'Cinzel, serif', fontSize:160, color:'#8b0000', lineHeight:1, fontWeight:700 }}>
+        <div className="fail-num" style={{ fontFamily:'Cinzel, serif', fontSize:180, color:'#8b0000', lineHeight:1, fontWeight:700 }}>
           {result}
         </div>
-
-        <div style={{ fontFamily:'Share Tech Mono, monospace', color:'#2a2a2a', fontSize:14, marginTop:14, letterSpacing:'0.1em' }}>
+        <div style={{ fontFamily:'Share Tech Mono, monospace', color:'#2a2a2a', fontSize:15, marginTop:16, letterSpacing:'0.12em' }}>
           {expr}
         </div>
-
-        <div className="fail-msg" style={{ color:'#5a0000', fontSize:20, marginTop:28, fontFamily:'Crimson Text, serif', fontStyle:'italic', letterSpacing:'0.04em', lineHeight:1.6 }}>
+        <div className="fail-msg" style={{ color:'#5a0000', fontSize:22, marginTop:32, fontFamily:'Crimson Text, serif', fontStyle:'italic', lineHeight:1.7 }}>
           "{msg}"
         </div>
-
-        <div style={{ color:'#1a1a1a', fontSize:11, marginTop:48, fontFamily:'Cinzel, serif', letterSpacing:'0.2em', textTransform:'uppercase' }}>
+        <div style={{ color:'#111', fontSize:11, marginTop:52, fontFamily:'Cinzel, serif', letterSpacing:'0.25em', textTransform:'uppercase' }}>
           tap anywhere to dismiss
         </div>
       </div>
@@ -316,14 +314,14 @@ function CriticalOverlay({ type, result, expr, onDismiss }) {
   );
 }
 
-// ── Main ────────────────────────────────────────────────────────
+// ── Main DiceRoller ──────────────────────────────────────────────
 export default function DiceRoller({ system, campaignId, getModifier, stats, externalExpr, rollTrigger, characterName }) {
   const { user } = useAuthStore();
   const [expr, setExpr] = useState(externalExpr || '2d6');
   const [result, setResult] = useState(null);
   const [rolling, setRolling] = useState(false);
   const [sendToDiscord, setSendToDiscord] = useState(false);
-  const [webhooks, setWebhooks] = useState([]);
+  const [globalWebhooks, setGlobalWebhooks] = useState([]);
   const [selectedWebhookUrl, setSelectedWebhookUrl] = useState('');
   const [critical, setCritical] = useState(null);
   const prevTrigger = useRef(0);
@@ -332,11 +330,11 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
   useEffect(() => { exprRef.current = expr; }, [expr]);
   useEffect(() => { if (externalExpr !== undefined) setExpr(externalExpr); }, [externalExpr]);
 
+  // Load global webhooks (available to all users)
   useEffect(() => {
-    api.get('/users/me/profile').then(res => {
-      const whs = res.data.discordWebhooks || [];
-      setWebhooks(whs);
-      if (whs.length > 0) setSelectedWebhookUrl(whs[0].url);
+    api.get('/webhooks').then(res => {
+      setGlobalWebhooks(res.data || []);
+      if (res.data?.length > 0) setSelectedWebhookUrl(res.data[0].url);
     }).catch(() => {});
   }, []);
 
@@ -357,26 +355,25 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
       const single = isSingleGroup(trimmed);
       const { min, max } = getMinMax(parsed.diceGroups, parsed.flatMod);
 
-      try {
-        await api.post('/dice/roll', {
-          expression: trimmed, system, campaignId,
-          sendToDiscord: sendToDiscord && !!selectedWebhookUrl,
-          webhookUrl: sendToDiscord ? selectedWebhookUrl : null,
-          result: res.total,
-          details: res.breakdown,
-          characterName: characterName || null,
-        });
-      } catch {}
-
+      // ── Show result IMMEDIATELY — no waiting for network ──
       setResult({ ...res, expr: trimmed, min, max });
+      setRolling(false);
+
+      // ── Fire-and-forget: log + Discord in background ──
+      api.post('/dice/roll', {
+        expression: trimmed, system, campaignId,
+        sendToDiscord: sendToDiscord && !!selectedWebhookUrl,
+        webhookUrl: sendToDiscord ? selectedWebhookUrl : null,
+        result: res.total, details: res.breakdown,
+        characterName: characterName || null,
+      }).catch(() => {}); // silent fail — never blocks UI
 
       if (single) {
-        if (res.total === max) setTimeout(() => setCritical({ type: 'max', result: res.total, expr: trimmed }), 200);
-        else if (res.total === min) setTimeout(() => setCritical({ type: 'min', result: res.total, expr: trimmed }), 200);
+        if (res.total === max) setTimeout(() => setCritical({ type:'max', result:res.total, expr:trimmed }), 200);
+        else if (res.total === min) setTimeout(() => setCritical({ type:'min', result:res.total, expr:trimmed }), 200);
       }
     } catch (err) {
       toast.error(err.message || 'Invalid expression');
-    } finally {
       setRolling(false);
     }
   }, [sendToDiscord, selectedWebhookUrl, system, campaignId, characterName]);
@@ -384,78 +381,70 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
   const acc = '#c9a84c';
 
   return (
-    <div style={{ background: '#161616', border: '1px solid #2a2a2a', borderRadius: 8, padding: 18 }}>
-      <div className="section-title" style={{ color: acc }}>🎲 Dice Roller</div>
+    <div style={{ background:'#161616', border:'1px solid #2a2a2a', borderRadius:8, padding:18 }}>
+      <div className="section-title" style={{ color:acc }}>🎲 Dice Roller</div>
 
-      <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 11 }}>Dice Expression</label>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ marginBottom:14 }}>
+        <label style={{ fontSize:11 }}>Dice Expression</label>
+        <div style={{ display:'flex', gap:8 }}>
           <input value={expr} onChange={e => setExpr(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') doRoll(expr); }}
+            onKeyDown={e => { if (e.key==='Enter') doRoll(expr); }}
             placeholder="e.g. 2d6+3 or 1d100+1d10+1"
-            style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: 15, flex: 1 }} />
+            style={{ fontFamily:'Share Tech Mono, monospace', fontSize:15, flex:1 }} />
           <button onClick={() => doRoll(expr)} disabled={rolling}
-            style={{ background: acc, color: '#000', border: 'none', borderRadius: 6, padding: '0 18px', fontFamily: 'Cinzel, serif', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em', minWidth: 72, opacity: rolling ? 0.7 : 1 }}>
+            style={{ background:acc, color:'#000', border:'none', borderRadius:6, padding:'0 18px', fontFamily:'Cinzel, serif', fontSize:13, fontWeight:700, cursor:'pointer', letterSpacing:'0.08em', minWidth:72, opacity:rolling?0.7:1 }}>
             {rolling ? '…' : 'ROLL'}
           </button>
         </div>
-        <div style={{ fontFamily: 'Share Tech Mono, monospace', color: '#333', fontSize: 10, marginTop: 5 }}>
+        <div style={{ fontFamily:'Share Tech Mono, monospace', color:'#333', fontSize:10, marginTop:5 }}>
           2d6 · 1d20+5 · 3d4-1 · 1d100+1d10+1
         </div>
       </div>
 
       {/* Discord */}
-      <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 6, padding: 12, marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: sendToDiscord ? 10 : 0 }}>
-          <div style={{ width: 38, height: 22, borderRadius: 11, cursor: 'pointer', position: 'relative', background: sendToDiscord ? acc : '#2a2a2a', transition: 'background 0.2s', flexShrink: 0 }}
-            onClick={() => setSendToDiscord(p => !p)}>
-            <div style={{ position: 'absolute', top: 3, left: sendToDiscord ? 19 : 3, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+      <div style={{ background:'#0d0d0d', border:'1px solid #1a1a1a', borderRadius:6, padding:12, marginBottom:14 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:sendToDiscord?10:0 }}>
+          <div style={{ width:38, height:22, borderRadius:11, cursor:'pointer', position:'relative', background:sendToDiscord?acc:'#2a2a2a', transition:'background 0.2s', flexShrink:0 }}
+            onClick={() => setSendToDiscord(p=>!p)}>
+            <div style={{ position:'absolute', top:3, left:sendToDiscord?19:3, width:16, height:16, borderRadius:'50%', background:'#fff', transition:'left 0.2s' }} />
           </div>
-          <span style={{ fontSize: 13, color: sendToDiscord ? '#e8e8e8' : '#555', fontFamily: 'Cinzel, serif', letterSpacing: '0.05em', userSelect: 'none' }}>
+          <span style={{ fontSize:13, color:sendToDiscord?'#e8e8e8':'#555', fontFamily:'Cinzel, serif', letterSpacing:'0.05em', userSelect:'none' }}>
             Send to Discord
           </span>
         </div>
         {sendToDiscord && (
-          webhooks.length === 0
-            ? <div style={{ fontSize: 12, color: '#555', fontFamily: 'Cinzel, serif' }}>No webhooks. Add them in Profile.</div>
+          globalWebhooks.length === 0
+            ? <div style={{ fontSize:12, color:'#555' }}>No webhooks configured. Ask your Admin to add them.</div>
             : <div>
-                <label style={{ fontSize: 11 }}>Channel</label>
-                <select value={selectedWebhookUrl} onChange={e => setSelectedWebhookUrl(e.target.value)} style={{ fontSize: 13 }}>
-                  {webhooks.map((w, i) => <option key={i} value={w.url}>{w.label || `Webhook ${i + 1}`}</option>)}
+                <label style={{ fontSize:11 }}>Channel</label>
+                <select value={selectedWebhookUrl} onChange={e => setSelectedWebhookUrl(e.target.value)} style={{ fontSize:13 }}>
+                  {globalWebhooks.map((w,i) => <option key={i} value={w.url}>{w.label}</option>)}
                 </select>
               </div>
         )}
       </div>
 
-      {/* Result — big number */}
+      {/* Result */}
       {result && (
-        <div style={{ background: '#0d0d0d', border: `1px solid ${acc}33`, borderRadius: 8, padding: '20px 16px', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: 88, color: acc, lineHeight: 1, fontWeight: 700, textShadow: `0 0 30px ${acc}55` }}>
+        <div style={{ background:'#0d0d0d', border:`1px solid ${acc}33`, borderRadius:8, padding:'20px 16px', textAlign:'center' }}>
+          <div style={{ fontFamily:'Cinzel, serif', fontSize:88, color:acc, lineHeight:1, fontWeight:700, textShadow:`0 0 30px ${acc}55` }}>
             {result.total}
           </div>
-          <div style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: 12, color: '#555', marginTop: 8 }}>
-            {result.breakdown.map((g, i) => (
-              <span key={i}>{i > 0 ? ' + ' : ''}{g.sign < 0 ? '−[' : '['}{g.rolls.join(', ')}]</span>
+          <div style={{ fontFamily:'Share Tech Mono, monospace', fontSize:12, color:'#555', marginTop:8 }}>
+            {result.breakdown.map((g,i) => (
+              <span key={i}>{i>0?' + ':''}{g.sign<0?'−[':'['}{g.rolls.join(', ')}]</span>
             ))}
-            {result.flatMod !== 0 && <span> {result.flatMod > 0 ? '+' : ''}{result.flatMod}</span>}
+            {result.flatMod!==0 && <span> {result.flatMod>0?'+':''}{result.flatMod}</span>}
           </div>
-          {system === 'DUNGEON_WORLD' && (() => {
+          {system==='DUNGEON_WORLD' && (() => {
             const t = result.total;
-            const tag = t >= 10 ? { label: '10+ Strong Hit', color: '#4ade80' }
-              : t >= 7 ? { label: '7-9 Partial Hit', color: '#facc15' }
-              : { label: '6- Miss', color: '#f87171' };
-            return (
-              <div style={{ display: 'inline-block', marginTop: 12, padding: '5px 20px', borderRadius: 20, fontFamily: 'Cinzel, serif', fontSize: 13, letterSpacing: '0.1em', background: tag.color + '22', color: tag.color, border: `1px solid ${tag.color}44` }}>
-                {tag.label}
-              </div>
-            );
+            const tag = t>=10?{label:'10+ Strong Hit',color:'#4ade80'}:t>=7?{label:'7-9 Partial Hit',color:'#facc15'}:{label:'6- Miss',color:'#f87171'};
+            return <div style={{ display:'inline-block', marginTop:12, padding:'5px 20px', borderRadius:20, fontFamily:'Cinzel, serif', fontSize:13, letterSpacing:'0.1em', background:tag.color+'22', color:tag.color, border:`1px solid ${tag.color}44` }}>{tag.label}</div>;
           })()}
         </div>
       )}
 
-      {critical && (
-        <CriticalOverlay type={critical.type} result={critical.result} expr={critical.expr} onDismiss={() => setCritical(null)} />
-      )}
+      {critical && <CriticalOverlay type={critical.type} result={critical.result} expr={critical.expr} onDismiss={() => setCritical(null)} />}
     </div>
   );
 }
