@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api.js';
 import toast from 'react-hot-toast';
+import FontSizeControl from '../components/FontSizeControl.jsx';
 
 const C = {
   bg: '#f2ede3', paper: '#e8e2d4', dark: '#1a1a1a', mid: '#444', muted: '#888',
@@ -417,6 +418,7 @@ export default function CainGMSheet() {
           </div>
         </div>
 
+        <FontSizeControl />
         {/* Footer */}
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: C.font, fontSize: 8, color: C.muted, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
           REFER TO DOCTRINE TM451 IN CASE OF CATEGORY 5+ EVENT &nbsp;|&nbsp; As above, so below &nbsp;|&nbsp; CASTLE DIVISION

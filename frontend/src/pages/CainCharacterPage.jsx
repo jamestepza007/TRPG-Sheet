@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api.js';
 import { getSystem } from '../utils/systems.js';
 import CainDiceRoller from '../components/CainDiceRoller.jsx';
+import FontSizeControl from '../components/FontSizeControl.jsx';
 import toast from 'react-hot-toast';
 
 // ── CAIN style tokens ────────────────────────────────────────────
@@ -19,6 +20,7 @@ const C = {
   font: "'Courier New', 'Courier', monospace",
   fontSans: "'Arial Narrow', Arial, sans-serif",
 };
+
 
 const label = (text, style = {}) => (
   <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.mid, marginBottom: 2, ...style }}>{text}</div>
@@ -462,8 +464,7 @@ export default function CainCharacterPage() {
             <div style={{ marginTop: 12 }}>
               <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginBottom: 4 }}>AFFLICTIONS:</div>
               <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 4 }}>Debrief after mission for decontamination.</div>
-              <textarea value={sheet.afflictions || ''} onChange={e => update('afflictions', e.target.value)} rows={4}
-                style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
+              <textarea value={sheet.afflictions || ''} onChange={e => update('afflictions', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
             </div>
           </SectionBox>
 
@@ -543,8 +544,7 @@ export default function CainCharacterPage() {
               <CircleRow count={9} filled={sheet.kitPoints || 0} onToggle={i => update('kitPoints', i < (sheet.kitPoints || 0) ? i : i + 1)} size={14} />
             </div>
             <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>Spend KP to pull out the following items any time:</div>
-            <textarea value={sheet.kitDescription || ''} onChange={e => update('kitDescription', e.target.value)} rows={6}
-              style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 6 }} />
+            <textarea value={sheet.kitDescription || ''} onChange={e => update('kitDescription', e.target.value)} rows={6} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ fontFamily: C.fontSans, fontSize: 11, fontWeight: 700 }}>■ $ ■ SCRIP:</div>
               <input type="number" value={sheet.scrip || 0} onChange={e => update('scrip', parseInt(e.target.value) || 0)}
@@ -563,7 +563,7 @@ export default function CainCharacterPage() {
                 </div>
                 <div>
                   <div style={{ fontFamily: C.fontSans, fontSize: 11, fontWeight: 700 }}>ADVANCES:</div>
-                  <CircleRow count={3} filled={sheet.advances || 0} onToggle={i => update('advances', i < (sheet.advances || 0) ? i : i + 1)} size={20} />
+                  <CircleRow count={5} filled={sheet.advances || 0} onToggle={i => update('advances', i < (sheet.advances || 0) ? i : i + 1)} size={20} dashedFrom={3} />
                 </div>
               </div>
               <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 6 }}>At the end of each session, answer each question, then mark xp. Cash an advance when filled.</div>
@@ -601,29 +601,24 @@ export default function CainCharacterPage() {
 
           <SectionBox title="REGISTERED ABILITIES — AGENDA">
             <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>Describe registered agenda here. Swap agendas between missions. Keep any bolded items.</div>
-            <textarea value={sheet.agendaDescription || ''} onChange={e => update('agendaDescription', e.target.value)} rows={4} placeholder="Agenda description..."
-              style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 4, marginBottom: 8 }} />
+            <textarea value={sheet.agendaDescription || ''} onChange={e => update('agendaDescription', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
             <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginBottom: 4 }}>AGENDA ITEMS:</div>
-            <textarea value={sheet.agendaItems || ''} onChange={e => update('agendaItems', e.target.value)} rows={4} placeholder="Agenda items..."
-              style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 4 }} />
+            <textarea value={sheet.agendaItems || ''} onChange={e => update('agendaItems', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
             <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginTop: 8, marginBottom: 4 }}>AGENDA ABILITIES (spend advance, 5 max):</div>
-            <textarea value={sheet.agendaAbilities || ''} onChange={e => update('agendaAbilities', e.target.value)} rows={4}
-              style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 4 }} />
+            <textarea value={sheet.agendaAbilities || ''} onChange={e => update('agendaAbilities', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
           </SectionBox>
 
           <div>
             <SectionBox title="BLASPHEMY">
               <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>Describe registered psychic phenomena. Keep sticker attached at all times.</div>
-              <textarea value={sheet.blasphemyDescription || ''} onChange={e => update('blasphemyDescription', e.target.value)} rows={4} placeholder="Blasphemy description..."
-                style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 4, marginBottom: 8 }} />
+              <textarea value={sheet.blasphemyDescription || ''} onChange={e => update('blasphemyDescription', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
               <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, color: C.mid, marginBottom: 4 }}>PASSIVE:</div>
-              <textarea value={sheet.blasphemyPassive || ''} onChange={e => update('blasphemyPassive', e.target.value)} rows={3}
-                style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 4 }} />
+              <textarea value={sheet.blasphemyPassive || ''} onChange={e => update('blasphemyPassive', e.target.value)} rows={3} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
               <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginTop: 8, marginBottom: 4 }}>OBSERVED POWERS (spend advance for each):</div>
-              {(sheet.observedPowers || ['', '', '', '']).map((p, i) => (
+              {(sheet.observedPowers || ['', '', '', '', '']).map((p, i) => (
                 <div key={i} style={{ marginBottom: 6 }}>
                   <div style={{ fontFamily: C.fontSans, fontSize: 7, color: C.muted, borderLeft: `3px solid ${C.border}`, paddingLeft: 6 }}>OBSERVED POWER {i + 1}</div>
-                  <textarea value={p} rows={2} onChange={e => { const ops = [...(sheet.observedPowers || ['', '', '', ''])]; ops[i] = e.target.value; update('observedPowers', ops); }}
+                  <textarea value={p} rows={2} onChange={e => { const ops = [...(sheet.observedPowers || ['', '', '', '', ''])]; ops[i] = e.target.value; update('observedPowers', ops); }}
                     style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 4, marginTop: 2 }} />
                 </div>
               ))}
@@ -645,6 +640,7 @@ export default function CainCharacterPage() {
 
         </div> {/* end 2-col grid */}
 
+        {!cropSrc && <FontSizeControl />}
         {/* Footer stamp */}
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: C.font, fontSize: 8, color: C.muted, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
           Report all changes to dormitory supervisor (see code C664) &nbsp;|&nbsp; If you suspect you are cursed, call 994 immediately &nbsp;|&nbsp; As above, so below &nbsp;|&nbsp; CASTLE

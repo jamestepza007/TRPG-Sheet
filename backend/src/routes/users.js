@@ -52,10 +52,17 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
   }
 });
 
-router.put('/:id', requireRole('ADMIN'), async (req, res) => {
+router.put('/:id', async (req, res) => {
+  // Admin can edit anyone; users can only edit themselves (no role change)
+  const isSelf = req.user.id === req.params.id;
+  const isAdmin = req.user.role === 'ADMIN';
+  if (!isSelf && !isAdmin) return res.status(403).json({ error: 'Forbidden' });
+
   const { username, password, role } = req.body;
-  const data = { username, role };
+  const data = {};
+  if (username) data.username = username;
   if (password) data.password = await bcrypt.hash(password, 10);
+  if (role && isAdmin) data.role = role; // only admin can change role
   try {
     const user = await prisma.user.update({
       where: { id: req.params.id },
@@ -63,7 +70,10 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
       select: { id: true, username: true, role: true }
     });
     res.json(user);
-  } catch { res.status(500).json({ error: 'Server error' }); }
+  } catch (err) {
+    if (err.code === 'P2002') return res.status(409).json({ error: 'Username already taken' });
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 router.delete('/:id', requireRole('ADMIN'), async (req, res) => {

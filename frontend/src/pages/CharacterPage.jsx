@@ -4,6 +4,7 @@ import api from '../utils/api.js';
 import { getSystem } from '../utils/systems.js';
 import DiceRoller from '../components/DiceRoller.jsx';
 import toast from 'react-hot-toast';
+import FontSizeControl from '../components/FontSizeControl.jsx';
 
 // ── Portrait Crop Modal ─────────────────────────────────────────
 // Preview matches actual display ratio: 130w × 150h
@@ -488,6 +489,7 @@ export default function CharacterPage() {
           </div>
         </div>
       </div>
+      {!cropSrc && <FontSizeControl dark={true} />}
     </div>
   );
 }
