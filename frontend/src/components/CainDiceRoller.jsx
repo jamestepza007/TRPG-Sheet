@@ -69,7 +69,7 @@ export default function CainDiceRoller({ sheet, system, characterName }) {
     return sheet[selectedSkill] || 0;
   };
 
-  const totalDice = Math.min(baseDice + getSkillDice() + bonusDice, baseDice + 3); // max +3 bonus
+  const totalDice = Math.max(1, baseDice + getSkillDice() + bonusDice);
 
   const roll = useCallback(async () => {
     if (totalDice < 1) return toast.error('Need at least 1 die');
@@ -159,7 +159,7 @@ export default function CainDiceRoller({ sheet, system, characterName }) {
 
           {/* Bonus dice */}
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: C.mid, marginBottom: 6 }}>BONUS DICE (max +3):</div>
+            <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: C.mid, marginBottom: 6 }}>BONUS DICE:</div>
             <div style={{ display: 'flex', gap: 6 }}>
               {[-1, 0, 1, 2, 3].map(n => (
                 <button key={n} onClick={() => setBonusDice(n)}
