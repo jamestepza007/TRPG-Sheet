@@ -81,39 +81,96 @@ const CATASTROPHIC = [
 ];
 
 // ── Audio ────────────────────────────────────────────────────────
+function playDiceRollSound() {
+  // Single soft "tick" — just enough to confirm the action
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(ctx.sampleRate*0.008));
+    const src = ctx.createBufferSource(), gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass'; filter.frequency.value = 1200; filter.Q.value = 2;
+    src.buffer = buf; src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.04);
+    src.start(now);
+  } catch {}
+}
+
+function playSuspenseSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const dur = 2.2; // matches new longer suspense
+    // Deep cinematic rising tension
+    [41.2, 55, 73.42, 110].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = i < 2 ? 'sine' : 'triangle';
+      o.frequency.setValueAtTime(f, now + i * 0.1);
+      o.frequency.exponentialRampToValueAtTime(f * 1.8, now + dur);
+      g.gain.setValueAtTime(0, now + i * 0.1);
+      g.gain.linearRampToValueAtTime(0.05 - i*0.008, now + 0.4);
+      g.gain.linearRampToValueAtTime(0.09 - i*0.01, now + dur - 0.2);
+      g.gain.linearRampToValueAtTime(0, now + dur + 0.1);
+      o.start(now + i * 0.1); o.stop(now + dur + 0.3);
+    });
+    // Heartbeat pulse x2
+    [0.6, 1.1].forEach(t => {
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.18, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(ctx.sampleRate*0.04));
+      const src = ctx.createBufferSource(), gn = ctx.createGain();
+      const filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 120;
+      src.buffer = buf; src.connect(filt); filt.connect(gn); gn.connect(ctx.destination);
+      gn.gain.setValueAtTime(0.3, now + t); gn.gain.linearRampToValueAtTime(0, now + t + 0.2);
+      src.start(now + t);
+    });
+  } catch {}
+}
+
 function playLegendarySound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
-    // Ascending heavenly choir
-    [196, 261.63, 329.63, 392, 523.25, 659.25, 783.99].forEach((f, i) => {
+
+    // Choir — lower octave, all sine, warmer tone
+    [98, 130.81, 164.81, 196, 261.63, 329.63, 392].forEach((f, i) => {
       const o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type = i % 2 === 0 ? 'sine' : 'triangle';
-      o.frequency.setValueAtTime(f * 0.5, now + i * 0.07);
-      o.frequency.linearRampToValueAtTime(f, now + i * 0.07 + 0.15);
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 800; // cut harsh highs
+      o.connect(lp); lp.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f * 0.8, now + i * 0.07);
+      o.frequency.linearRampToValueAtTime(f, now + i * 0.07 + 0.2);
       g.gain.setValueAtTime(0, now + i * 0.07);
-      g.gain.linearRampToValueAtTime(0.14, now + i * 0.07 + 0.12);
-      g.gain.linearRampToValueAtTime(0.07, now + i * 0.07 + 0.5);
-      g.gain.linearRampToValueAtTime(0, now + 3);
-      o.start(now + i * 0.07); o.stop(now + 3.5);
+      g.gain.linearRampToValueAtTime(0.13, now + i * 0.07 + 0.15);
+      g.gain.linearRampToValueAtTime(0.08, now + i * 0.07 + 0.6);
+      g.gain.linearRampToValueAtTime(0, now + 3.2);
+      o.start(now + i * 0.07); o.stop(now + 3.6);
     });
-    // Impact boom
+
+    // Impact — same but filter out harsh freq
     const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(ctx.sampleRate*0.025));
     const src = ctx.createBufferSource(), gn = ctx.createGain();
-    src.buffer = buf; src.connect(gn); gn.connect(ctx.destination);
-    gn.gain.setValueAtTime(0.8, now); gn.gain.linearRampToValueAtTime(0, now+0.18);
+    const impFilt = ctx.createBiquadFilter();
+    impFilt.type = 'lowpass'; impFilt.frequency.value = 600;
+    src.buffer = buf; src.connect(impFilt); impFilt.connect(gn); gn.connect(ctx.destination);
+    gn.gain.setValueAtTime(0.6, now); gn.gain.linearRampToValueAtTime(0, now+0.2);
     src.start(now);
-    // Sparkle cascade
-    [1047, 1175, 1319, 1568, 1760, 2093, 2349].forEach((f, i) => {
+
+    // Sparkle — lower and quieter, max 1200Hz
+    [523, 587, 659, 784, 880, 1047].forEach((f, i) => {
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.connect(g); g.connect(ctx.destination);
       o.type = 'sine'; o.frequency.value = f;
-      const t = now + 0.25 + i * 0.1;
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.18, t+0.04);
-      g.gain.linearRampToValueAtTime(0, t+0.35);
+      const t = now + 0.3 + i * 0.1;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.1, t+0.05);
+      g.gain.linearRampToValueAtTime(0, t+0.3);
       o.start(t); o.stop(t+0.4);
     });
   } catch {}
@@ -123,39 +180,160 @@ function playCatastrophicSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
-    // Descending doom drone
-    [110, 82.41, 73.42, 65.41, 55, 41.2].forEach((f, i) => {
+
+    // Heavy thud first — punch on impact
+    const thudBuf = ctx.createBuffer(1, ctx.sampleRate * 0.35, ctx.sampleRate);
+    const td = thudBuf.getChannelData(0);
+    for (let i = 0; i < td.length; i++) td[i] = (Math.random()*2-1) * Math.exp(-i/(ctx.sampleRate*0.07));
+    const thudSrc = ctx.createBufferSource(), thudGain = ctx.createGain();
+    const thudFilt = ctx.createBiquadFilter(); thudFilt.type = 'lowpass'; thudFilt.frequency.value = 180;
+    thudSrc.buffer = thudBuf;
+    thudSrc.connect(thudFilt); thudFilt.connect(thudGain); thudGain.connect(ctx.destination);
+    thudGain.gain.setValueAtTime(0.7, now); thudGain.gain.linearRampToValueAtTime(0, now+0.4);
+    thudSrc.start(now);
+
+    // Descending ominous drones — audible but not piercing
+    [110, 82.41, 65.41, 55, 41.2].forEach((f, i) => {
       const o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type = i % 2 === 0 ? 'sawtooth' : 'square';
-      o.frequency.setValueAtTime(f * 2.5, now + i * 0.18);
-      o.frequency.linearRampToValueAtTime(f * 0.8, now + i * 0.18 + 0.5);
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 400;
+      o.connect(lp); lp.connect(g); g.connect(ctx.destination);
+      o.type = i < 3 ? 'sawtooth' : 'sine';
+      o.frequency.setValueAtTime(f * 1.3, now + i * 0.18);
+      o.frequency.linearRampToValueAtTime(f * 0.75, now + i * 0.18 + 0.7);
       g.gain.setValueAtTime(0, now + i * 0.18);
-      g.gain.linearRampToValueAtTime(0.1, now + i * 0.18 + 0.15);
-      g.gain.linearRampToValueAtTime(0.06, now + i * 0.18 + 0.6);
-      g.gain.linearRampToValueAtTime(0, now + 3.5);
-      o.start(now + i * 0.18); o.stop(now + 4);
+      g.gain.linearRampToValueAtTime(0.09, now + i * 0.18 + 0.2);
+      g.gain.linearRampToValueAtTime(0.05, now + i * 0.18 + 0.8);
+      g.gain.linearRampToValueAtTime(0, now + 3.2);
+      o.start(now + i * 0.18); o.stop(now + 3.5);
     });
-    // Heavy crash
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.4, ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(ctx.sampleRate*0.09));
-    const src = ctx.createBufferSource(), gn = ctx.createGain();
-    src.buffer = buf; src.connect(gn); gn.connect(ctx.destination);
-    gn.gain.setValueAtTime(1.0, now); gn.gain.linearRampToValueAtTime(0, now+0.45);
-    src.start(now);
-    // Dissonant wail dying out
-    [[370, 349], [494, 466], [622, 587]].forEach(([f1, f2], i) => {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type = 'sawtooth';
-      const t = now + 0.15 + i * 0.12;
-      o.frequency.setValueAtTime(f1, t);
-      o.frequency.linearRampToValueAtTime(f2 * 0.5, t + 0.9);
-      g.gain.setValueAtTime(0.08, t); g.gain.linearRampToValueAtTime(0, t + 1.0);
-      o.start(t); o.stop(t + 1.1);
-    });
+
+    // Short dissonant sting
+    const sting = ctx.createOscillator(), stingG = ctx.createGain();
+    sting.connect(stingG); stingG.connect(ctx.destination);
+    sting.type = 'sawtooth'; sting.frequency.value = 220;
+    sting.frequency.linearRampToValueAtTime(110, now + 0.5);
+    stingG.gain.setValueAtTime(0, now + 0.1);
+    stingG.gain.linearRampToValueAtTime(0.12, now + 0.18);
+    stingG.gain.linearRampToValueAtTime(0, now + 0.6);
+    sting.start(now + 0.1); sting.stop(now + 0.7);
   } catch {}
+}
+
+// ── Suspense Screen ──────────────────────────────────────────────
+// Pure mystery — no hint of Legendary vs Catastrophic until reveal
+function SuspenseScreen({ onReveal }) {
+  const [phase, setPhase] = useState(0); // 0=dark 1=pulse 2=frantic
+  const DURATION = 2600;
+
+  useEffect(() => {
+    playSuspenseSound();
+    const t1 = setTimeout(() => setPhase(1), 500);
+    const t2 = setTimeout(() => setPhase(2), 1600);
+    const t3 = setTimeout(onReveal, DURATION);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999, background: '#000',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden',
+    }}>
+      <style>{`
+        @keyframes sp-orb { 0%,100%{opacity:0.08;transform:scale(0.9)} 50%{opacity:0.5;transform:scale(1.1)} }
+        @keyframes sp-ring { 0%{transform:translate(-50%,-50%) scale(0.1);opacity:0.6} 100%{transform:translate(-50%,-50%) scale(2.8);opacity:0} }
+        @keyframes sp-dot { 0%,100%{opacity:0.15;transform:scale(0.6)} 50%{opacity:1;transform:scale(1.3)} }
+        @keyframes sp-shake { 0%,100%{transform:translate(0,0) rotate(0)} 20%{transform:translate(-4px,3px) rotate(-0.5deg)} 50%{transform:translate(4px,-3px) rotate(0.5deg)} 80%{transform:translate(-2px,4px) rotate(-0.3deg)} }
+        @keyframes sp-icon { 0%{opacity:0;transform:scale(0.5)} 100%{opacity:1;transform:scale(1)} }
+        @keyframes sp-question { 0%,100%{opacity:0.3;transform:scale(0.95)} 50%{opacity:1;transform:scale(1.05)} }
+        @keyframes sp-scanline { 0%{transform:translateY(-100%)} 100%{transform:translateY(100vh)} }
+        @keyframes sp-vignette { 0%{opacity:0} 100%{opacity:1} }
+        @keyframes sp-flicker { 0%,100%{opacity:1} 45%{opacity:0.85} 50%{opacity:0.4} 55%{opacity:0.9} }
+      `}</style>
+
+      {/* Vignette builds up */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'radial-gradient(ellipse at center, transparent 10%, #0a0a0a55 55%, #000 100%)',
+        opacity: phase >= 1 ? 1 : 0, transition: 'opacity 1s ease',
+      }} />
+
+      {/* Scanline flicker — mysterious atmosphere */}
+      {phase >= 1 && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
+          background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.012) 2px, rgba(255,255,255,0.012) 4px)',
+        }} />
+      )}
+
+      {/* Pulsing orb — white/silver, no color hint */}
+      {phase >= 1 && (
+        <div style={{
+          position: 'absolute', width: 350, height: 350, borderRadius: '50%',
+          background: 'radial-gradient(circle, #ffffff18 0%, #ffffff08 40%, transparent 65%)',
+          animation: `sp-orb ${phase === 2 ? '0.4s' : '1s'} ease-in-out infinite`,
+        }} />
+      )}
+
+      {/* Expanding rings */}
+      {phase >= 1 && [0, 0.35, 0.7].map((d, i) => (
+        <div key={i} style={{
+          position: 'absolute', top: '50%', left: '50%',
+          width: 100 + i * 70, height: 100 + i * 70,
+          borderRadius: '50%',
+          border: `1px solid rgba(255,255,255,${0.3 - i * 0.08})`,
+          animation: `sp-ring ${phase === 2 ? '0.7s' : '1.4s'} ease-out ${d}s infinite`,
+          opacity: 0,
+        }} />
+      ))}
+
+      {/* Center content */}
+      <div style={{
+        position: 'relative', zIndex: 3, textAlign: 'center',
+        animation: phase === 2 ? 'sp-shake 0.12s ease-in-out infinite' : 'none',
+      }}>
+
+        {/* Dice icon — neutral, no hint */}
+        <div style={{
+          fontSize: phase === 2 ? 96 : 72, lineHeight: 1,
+          filter: `drop-shadow(0 0 ${phase === 2 ? 30 : 12}px rgba(255,255,255,0.6))`,
+          transition: 'all 0.4s ease',
+          animation: phase === 0 ? 'sp-icon 0.5s ease 0.2s both'
+            : `sp-question ${phase === 2 ? '0.35s' : '0.8s'} ease-in-out infinite`,
+        }}>
+          🎲
+        </div>
+
+        {/* Question marks building up */}
+        <div style={{
+          fontFamily: 'Cinzel, serif',
+          fontSize: phase === 2 ? 22 : 16,
+          color: `rgba(255,255,255,${phase === 0 ? 0 : 0.5})`,
+          letterSpacing: phase === 2 ? '0.6em' : '0.3em',
+          marginTop: 20,
+          transition: 'all 0.4s ease',
+          animation: phase >= 1 ? `sp-question ${phase === 2 ? '0.3s' : '0.7s'} ease-in-out infinite` : 'none',
+        }}>
+          {phase === 2 ? '? ? ? ? ?' : '? ? ?'}
+        </div>
+
+        {/* Dots */}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 20 }}>
+          {[0, 0.2, 0.4].map((d, i) => (
+            <div key={i} style={{
+              width: phase === 2 ? 12 : 8,
+              height: phase === 2 ? 12 : 8,
+              borderRadius: '50%',
+              background: '#fff',
+              boxShadow: phase === 2 ? '0 0 8px #fff' : 'none',
+              animation: `sp-dot ${phase === 2 ? '0.3s' : '0.65s'} ease-in-out ${d}s infinite`,
+              transition: 'all 0.3s',
+            }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Critical Overlay ─────────────────────────────────────────────
@@ -224,7 +402,8 @@ function CatastrophicParticle({ i }) {
   }} />;
 }
 
-function CriticalOverlay({ type, result, expr, onDismiss }) {
+function CriticalOverlay({ type, result, expr, onDismiss, revealed }) {
+  if (!revealed) return null; // wait for suspense to finish
   const isCrit = type === 'max';
   const [msg] = useState(() => {
     const pool = isCrit ? LEGENDARY : CATASTROPHIC;
@@ -323,7 +502,7 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
   const [sendToDiscord, setSendToDiscord] = useState(false);
   const [globalWebhooks, setGlobalWebhooks] = useState([]);
   const [selectedWebhookUrl, setSelectedWebhookUrl] = useState('');
-  const [critical, setCritical] = useState(null);
+  const [critical, setCritical] = useState(null); // {type, result, expr, revealed: bool}
   const prevTrigger = useRef(0);
   const exprRef = useRef(expr);
 
@@ -349,6 +528,8 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
     const trimmed = (expression || exprRef.current).trim();
     if (!trimmed) return;
     setRolling(true);
+    // Play dice rattle immediately on roll
+    playDiceRollSound();
     try {
       const parsed = parseDiceExpression(trimmed);
       const res = rollParsed(parsed);
@@ -366,11 +547,19 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
         webhookUrl: sendToDiscord ? selectedWebhookUrl : null,
         result: res.total, details: res.breakdown,
         characterName: characterName || null,
-      }).catch(() => {}); // silent fail — never blocks UI
+      }).catch(() => {});
 
       if (single) {
-        if (res.total === max) setTimeout(() => setCritical({ type:'max', result:res.total, expr:trimmed }), 200);
-        else if (res.total === min) setTimeout(() => setCritical({ type:'min', result:res.total, expr:trimmed }), 200);
+        const isCrit = res.total === max;
+        const isFail = res.total === min;
+        if (isCrit || isFail) {
+          const type = isCrit ? 'max' : 'min';
+          // Result is already shown above — let user see it briefly,
+          // then suspense screen takes over after 1 second
+          setTimeout(() => {
+            setCritical({ type, result: res.total, expr: trimmed, revealed: false });
+          }, 1000);
+        }
       }
     } catch (err) {
       toast.error(err.message || 'Invalid expression');
@@ -424,8 +613,8 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
         )}
       </div>
 
-      {/* Result */}
-      {result && (
+      {/* Result — hidden during critical flow */}
+      {result && !critical && (
         <div style={{ background:'#0d0d0d', border:`1px solid ${acc}33`, borderRadius:8, padding:'20px 16px', textAlign:'center' }}>
           <div style={{ fontFamily:'Cinzel, serif', fontSize:88, color:acc, lineHeight:1, fontWeight:700, textShadow:`0 0 30px ${acc}55` }}>
             {result.total}
@@ -444,7 +633,32 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
         </div>
       )}
 
-      {critical && <CriticalOverlay type={critical.type} result={critical.result} expr={critical.expr} onDismiss={() => setCritical(null)} />}
+      {/* Suspense screen — neutral mystery, no hint of type */}
+      {critical && !critical.revealed && (
+        <SuspenseScreen
+          onReveal={() => {
+            // Set result in main panel AND reveal critical overlay at the same time
+            setResult({
+              total: critical.result,
+              breakdown: critical.breakdown || [],
+              flatMod: critical.flatMod || 0,
+              expr: critical.expr,
+              min: critical.min,
+              max: critical.max,
+            });
+            setCritical(prev => prev ? { ...prev, revealed: true } : null);
+            if (critical.type === 'max') setTimeout(playLegendarySound, 50);
+            else setTimeout(playCatastrophicSound, 50);
+          }}
+        />
+      )}
+      {/* Full critical overlay after suspense */}
+      {critical && critical.revealed && (
+        <CriticalOverlay
+          type={critical.type} result={critical.result} expr={critical.expr} revealed={true}
+          onDismiss={() => setCritical(null)}
+        />
+      )}
     </div>
   );
 }
