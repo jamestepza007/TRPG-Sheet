@@ -295,7 +295,8 @@ export default function CainCharacterPage() {
     <div style={{ background: '#d4cfc4', minHeight: '100vh', padding: '20px' }}>
       <style>{`
         input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
-        textarea { resize: vertical; }
+        textarea { resize: vertical; color: #1a1a1a !important; background-color: rgba(0,0,0,0.03) !important; }
+        input { color: #1a1a1a !important; }
         * { box-sizing: border-box; }
       `}</style>
 
@@ -540,7 +541,7 @@ export default function CainCharacterPage() {
                     <button onClick={() => update('pathos', Math.max(0, (sheet.pathos || 0) - 1))}
                       style={{ width: 28, height: 28, border: `1px solid ${C.borderDark}`, background: 'transparent', fontFamily: C.font, fontSize: 18, cursor: 'pointer', color: C.dark, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
                     <div style={{ fontFamily: C.fontSans, fontSize: 28, fontWeight: 900, minWidth: 28, textAlign: 'center', color: C.dark }}>{sheet.pathos || 0}</div>
-                    <button onClick={() => update('pathos', (sheet.pathos || 0) + 1)}
+                    <button onClick={() => update('pathos', Math.min(4, (sheet.pathos || 0) + 1))}
                       style={{ width: 28, height: 28, border: `1px solid ${C.borderDark}`, background: 'transparent', fontFamily: C.font, fontSize: 18, cursor: 'pointer', color: C.dark, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                   </div>
                   <div style={{ fontFamily: C.font, fontSize: 7, color: C.muted, marginTop: 4 }}>Clear after session end</div>

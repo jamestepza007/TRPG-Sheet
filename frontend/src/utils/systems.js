@@ -123,6 +123,8 @@ export const SYSTEMS = {
       // XP & Advances
       xp: 0,
       advances: 0,
+      // Pathos
+      pathos: 0,
       // Notes
       notes: '',
     }),

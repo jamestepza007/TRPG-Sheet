@@ -511,11 +511,16 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
 
   // Load global webhooks (available to all users)
   useEffect(() => {
-    api.get('/users/me/profile').then(res => {
-      const whs = res.data.discordWebhooks || [];
-      setGlobalWebhooks(whs);
-      if (whs.length > 0) setSelectedWebhookUrl(whs[0].url);
-    }).catch(() => {});
+    Promise.all([
+      api.get('/webhooks').catch(() => ({ data: [] })),
+      api.get('/users/me/profile').catch(() => ({ data: {} })),
+    ]).then(([globalRes, profileRes]) => {
+      const global = globalRes.data || [];
+      const personal = profileRes.data?.discordWebhooks || [];
+      const merged = [...global, ...personal];
+      setGlobalWebhooks(merged);
+      if (merged.length > 0) setSelectedWebhookUrl(merged[0].url);
+    });
   }, []);
 
   useEffect(() => {
