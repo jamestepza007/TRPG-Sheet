@@ -9,7 +9,7 @@ export default function AdminPage() {
   const [webhooks, setWebhooks] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState(null);
-  const [form, setForm] = useState({ username: '', email: '', password: '', role: 'PLAYER' });
+  const [form, setForm] = useState({ username: '', password: '', role: 'PLAYER' });
   const [newWh, setNewWh] = useState({ label: '', url: '' });
   const [tab, setTab] = useState('users'); // 'users' | 'webhooks'
 
@@ -25,14 +25,14 @@ export default function AdminPage() {
     setWebhooks(res.data);
   };
 
-  const openCreate = () => { setEditUser(null); setForm({ username: '', email: '', password: '', role: 'PLAYER' }); setShowForm(true); };
-  const openEdit = (u) => { setEditUser(u); setForm({ username: u.username, email: u.email, password: '', role: u.role }); setShowForm(true); };
+  const openCreate = () => { setEditUser(null); setForm({ username: '', password: '', role: 'PLAYER' }); setShowForm(true); };
+  const openEdit = (u) => { setEditUser(u); setForm({ username: u.username, password: '', role: u.role }); setShowForm(true); };
 
   const submitUser = async (e) => {
     e.preventDefault();
     try {
       if (editUser) {
-        const data = { username: form.username, email: form.email, role: form.role };
+        const data = { username: form.username, role: form.role };
         if (form.password) data.password = form.password;
         await api.put(`/users/${editUser.id}`, data);
         toast.success('User updated!');
@@ -106,8 +106,7 @@ export default function AdminPage() {
               <form onSubmit={submitUser}>
                 <div className="grid-2 gap-4">
                   <div><label>Username</label><input value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} required /></div>
-                  <div><label>Email</label><input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required /></div>
-                  <div><label>Password {editUser && '(leave blank to keep)'}</label><input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} {...(!editUser && { required: true })} /></div>
+                <div><label>Password {editUser && '(leave blank to keep)'}</label><input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} {...(!editUser && { required: true })} /></div>
                   <div><label>Role</label>
                     <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
                       {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
@@ -126,7 +125,7 @@ export default function AdminPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #2a2a2a' }}>
-                  {['Username','Email','Role','Joined','Actions'].map(h => (
+                  {['Username','Role','Joined','Actions'].map(h => (
                     <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, color: '#555', fontFamily: 'Cinzel, serif', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
@@ -135,8 +134,7 @@ export default function AdminPage() {
                 {users.map(u => (
                   <tr key={u.id} style={{ borderBottom: '1px solid #1a1a1a' }}>
                     <td style={{ padding: '12px 16px', fontFamily: 'Cinzel, serif', fontSize: 14 }}>{u.username}</td>
-                    <td style={{ padding: '12px 16px', color: '#777', fontSize: 14 }}>{u.email}</td>
-                    <td style={{ padding: '12px 16px' }}>{roleBadge(u.role)}</td>
+<td style={{ padding: '12px 16px' }}>{roleBadge(u.role)}</td>
                     <td style={{ padding: '12px 16px', color: '#555', fontSize: 13 }}>{new Date(u.createdAt).toLocaleDateString()}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <div className="flex gap-2">

@@ -261,6 +261,11 @@ export default function CharacterPage() {
   const fetchChar = async () => {
     try {
       const res = await api.get(`/characters/${id}`);
+      // Route CAIN characters to their own page
+      if (res.data.system === 'CAIN') {
+        navigate(`/characters/cain/${id}`, { replace: true });
+        return;
+      }
       charRef.current = res.data;
       setCharacter(res.data);
       const defaults = { level: 1, xp: 0, maxHP: 10, currentHP: 10, maxStamina: 10, currentStamina: 10, maxMana: 10, currentMana: 10, armor: 0, class: '', race: '', moves: '', gear: '', bonds: '', notes: '', portrait: '' };

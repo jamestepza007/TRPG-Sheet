@@ -511,9 +511,10 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
 
   // Load global webhooks (available to all users)
   useEffect(() => {
-    api.get('/webhooks').then(res => {
-      setGlobalWebhooks(res.data || []);
-      if (res.data?.length > 0) setSelectedWebhookUrl(res.data[0].url);
+    api.get('/users/me/profile').then(res => {
+      const whs = res.data.discordWebhooks || [];
+      setGlobalWebhooks(whs);
+      if (whs.length > 0) setSelectedWebhookUrl(whs[0].url);
     }).catch(() => {});
   }, []);
 
@@ -606,9 +607,14 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
             ? <div style={{ fontSize:12, color:'#555' }}>No webhooks configured. Ask your Admin to add them.</div>
             : <div>
                 <label style={{ fontSize:11 }}>Channel</label>
-                <select value={selectedWebhookUrl} onChange={e => setSelectedWebhookUrl(e.target.value)} style={{ fontSize:13 }}>
-                  {globalWebhooks.map((w,i) => <option key={i} value={w.url}>{w.label}</option>)}
-                </select>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+                  {globalWebhooks.map((w, i) => (
+                    <button key={i} onClick={() => setSelectedWebhookUrl(w.url)}
+                      style={{ padding: '6px 10px', border: `1px solid ${selectedWebhookUrl === w.url ? '#c9a84c' : '#2a2a2a'}`, background: selectedWebhookUrl === w.url ? '#1a1200' : 'transparent', color: selectedWebhookUrl === w.url ? '#c9a84c' : '#888', fontFamily: 'Cinzel, serif', fontSize: 12, cursor: 'pointer', textAlign: 'left', letterSpacing: '0.05em', borderRadius: 4 }}>
+                      {selectedWebhookUrl === w.url ? '▶ ' : '   '}{w.label}
+                    </button>
+                  ))}
+                </div>
               </div>
         )}
       </div>

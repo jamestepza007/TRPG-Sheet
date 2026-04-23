@@ -40,6 +40,11 @@ export default function CampaignPage() {
   const fetchCampaign = async () => {
     try {
       const res = await api.get(`/campaigns/${id}`);
+      // Route CAIN campaigns to GM sheet
+      if (res.data.system === 'CAIN') {
+        navigate(`/campaigns/cain/${id}`, { replace: true });
+        return;
+      }
       setCampaign(res.data);
       setSystem(getSystem(res.data.system));
       if (res.data.party?.id) startSSE(res.data.party.id);

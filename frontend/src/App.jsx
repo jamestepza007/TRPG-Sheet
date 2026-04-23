@@ -9,6 +9,8 @@ import CampaignPage from './pages/CampaignPage.jsx';
 import PartyPage from './pages/PartyPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
+import CainCharacterPage from './pages/CainCharacterPage.jsx';
+import CainGMSheet from './pages/CainGMSheet.jsx';
 
 function ProtectedRoute({ children, roles }) {
   const { user, token, loading } = useAuthStore();
@@ -43,6 +45,8 @@ export default function App() {
         <Route path="/party/:id" element={<ProtectedRoute><PartyPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/characters/cain/:id" element={<ProtectedRoute><CainCharacterPage /></ProtectedRoute>} />
+        <Route path="/campaigns/cain/:id" element={<ProtectedRoute roles={['GM','ADMIN']}><CainGMSheet /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
