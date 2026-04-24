@@ -19,16 +19,14 @@ const PORT = process.env.PORT || 3001;
 const allowedOrigins = (process.env.FRONTEND_URL || '')
   .split(',').map(s => s.trim()).filter(Boolean);
 
-// Allow all origins for public endpoints (Owlbear extension etc.)
-app.use('/api/dice/recent', cors());
-
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     if (allowedOrigins.length === 0) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Allow Owlbear and Vercel preview domains
-    if (origin.includes('owlbear.rodeo') || origin.includes('vercel.app')) return callback(null, true);
+    // Allow Owlbear, Vercel preview, and extension domains
+    const trusted = ['owlbear.rodeo', 'owlbear.app', 'vercel.app'];
+    if (trusted.some(d => origin.includes(d))) return callback(null, true);
     callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
