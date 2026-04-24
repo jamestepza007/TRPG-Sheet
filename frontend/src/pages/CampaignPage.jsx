@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api.js';
 import { getSystem } from '../utils/systems.js';
@@ -28,25 +28,58 @@ export default function CampaignPage() {
   const navigate = useNavigate();
   const [campaign, setCampaign] = useState(null);
   const [system, setSystem] = useState(null);
+  const [connected, setConnected] = useState(false);
+  const sseRef = useRef(null);
 
   useEffect(() => {
     if (id === 'new') return;
     fetchCampaign();
-  }, [id]);
-
-  // Auto-refresh every 30s for near-realtime vitals
-  useEffect(() => {
-    if (!id || id === 'new') return;
-    const interval = setInterval(fetchCampaign, 30000);
-    return () => clearInterval(interval);
+    return () => { sseRef.current?.close(); };
   }, [id]);
 
   const fetchCampaign = async () => {
     try {
       const res = await api.get(`/campaigns/${id}`);
+      // Route CAIN campaigns to GM sheet
+      if (res.data.system === 'CAIN') {
+        navigate(`/campaigns/cain/${id}`, { replace: true });
+        return;
+      }
       setCampaign(res.data);
       setSystem(getSystem(res.data.system));
+      if (res.data.party?.id) startSSE(res.data.party.id);
     } catch { toast.error('Campaign not found'); navigate('/'); }
+  };
+
+  const startSSE = (partyId) => {
+    if (sseRef.current) sseRef.current.close();
+    const token = localStorage.getItem('token');
+    const baseUrl = import.meta.env.VITE_API_URL || '/api';
+    const es = new EventSource(`${baseUrl}/sse/party/${partyId}?token=${token}`);
+    sseRef.current = es;
+    es.onopen = () => setConnected(true);
+    es.onerror = () => { setConnected(false); setTimeout(() => startSSE(partyId), 5000); };
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'character_updated') {
+          setCampaign(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              party: {
+                ...prev.party,
+                members: prev.party.members.map(m =>
+                  m.character.id === data.characterId
+                    ? { ...m, character: { ...m.character, sheetData: data.sheetData, name: data.name } }
+                    : m
+                )
+              }
+            };
+          });
+        }
+      } catch {}
+    };
   };
 
   const kickPlayer = async (userId) => {
@@ -78,7 +111,13 @@ export default function CampaignPage() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, paddingBottom: 18, borderBottom: `1px solid ${acc}33` }}>
           <div>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: 26, color: acc }}>{campaign.name}</div>
-            <div style={{ color: '#555', fontSize: 13 }}>{system.name} · {members.length} Players</div>
+            <div style={{ color: '#555', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+              {system.name} · {members.length} Players
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: connected ? '#4ade80' : '#f87171', display: 'inline-block', boxShadow: connected ? '0 0 6px #4ade80' : 'none' }} />
+                <span style={{ color: connected ? '#4ade80' : '#f87171' }}>{connected ? 'Live' : 'Offline'}</span>
+              </span>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn-ghost btn-sm" onClick={() => navigate('/')}>← Back</button>
@@ -95,7 +134,7 @@ export default function CampaignPage() {
             </code>
             <button className="btn-ghost btn-sm" onClick={() => { navigator.clipboard.writeText(campaign.inviteCode); toast.success('Copied!'); }}>Copy</button>
           </div>
-          <p style={{ color: '#444', fontSize: 12, marginTop: 8, fontFamily: 'Cinzel, serif' }}>Share with players to join · Auto-refreshes every 30s</p>
+          <p style={{ color: '#444', fontSize: 12, marginTop: 8, fontFamily: 'Cinzel, serif' }}>Share with players to join · Updates are live</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>

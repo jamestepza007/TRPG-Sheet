@@ -122,12 +122,23 @@ export default function DashboardPage() {
     e.preventDefault();
     try {
       const sys = systemList.find(s => s.id === newChar.system);
-      const defaultData = { level: 1, xp: 0, maxHP: 10, currentHP: 10, maxStamina: 10, currentStamina: 10, maxMana: 10, currentMana: 10, armor: 0, class: '', race: '', moves: '', gear: '', bonds: '', notes: '', portrait: '' };
-      sys?.stats.forEach(s => { defaultData[s.key] = 10; });
+      // Use system's own default sheet if available, otherwise DW defaults
+      let defaultData;
+      if (sys?.getDefaultSheet) {
+        defaultData = sys.getDefaultSheet();
+      } else {
+        defaultData = { level: 1, xp: 0, maxHP: 10, currentHP: 10, maxStamina: 10, currentStamina: 10, maxMana: 10, currentMana: 10, armor: 0, class: '', race: '', moves: '', gear: '', bonds: '', notes: '', portrait: '' };
+        sys?.stats.forEach(s => { defaultData[s.key] = 10; });
+      }
       const res = await api.post('/characters', { ...newChar, sheetData: defaultData });
       toast.success('Character created!');
       closeModal();
-      navigate(`/characters/${res.data.id}`);
+      // Route to correct page based on system
+      if (newChar.system === 'CAIN') {
+        navigate(`/characters/cain/${res.data.id}`);
+      } else {
+        navigate(`/characters/${res.data.id}`);
+      }
     } catch { toast.error('Failed to create character'); }
   };
 
@@ -210,7 +221,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* DW badge top-right */}
-                <span className="badge badge-fantasy" style={{ position: 'absolute', top: 8, right: 8, fontSize: 9, zIndex: 2 }}>DW</span>
+                <span className="badge badge-fantasy" style={{ position: 'absolute', top: 8, right: 8, fontSize: 9, zIndex: 2 }}>{char.system === 'CAIN' ? 'CAIN' : 'DW'}</span>
 
                 {/* Info overlaid at bottom */}
                 <div style={{ position: 'relative', zIndex: 1, padding: '100px 14px 14px' }}>
