@@ -5,10 +5,8 @@ import { authenticate } from '../middleware/auth.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
-router.use(authenticate);
-
-router.post('/roll', async (req, res) => {
-  const { expression, system, campaignId, sendToDiscord, webhookUrl, result, details, characterName } = req.body;
+router.post('/roll', authenticate, async (req, res) => {
+  const { expression, system, campaignId, sendToDiscord, webhookUrl, result, details, characterName, min, max } = req.body;
 
   if (!expression || result === undefined) {
     return res.status(400).json({ error: 'expression and result are required' });
@@ -80,3 +78,34 @@ router.get('/history', async (req, res) => {
 });
 
 export default router;
+
+// GET /api/dice/recent?since=timestamp
+// Public-ish endpoint for Owlbear Extension to poll
+// Returns rolls newer than ?since (unix ms)
+// /recent is public — no auth needed for Owlbear extension
+router.get('/recent', async (req, res) => {
+  try {
+    const since = parseInt(req.query.since) || (Date.now() - 10000);
+    const sinceDate = new Date(since);
+    const rolls = await prisma.diceLog.findMany({
+      where: { createdAt: { gt: sinceDate } },
+      include: { user: { select: { username: true } } },
+      orderBy: { createdAt: 'asc' },
+      take: 20,
+    });
+    res.json(rolls.map(r => ({
+      id: r.id,
+      result: r.result,
+      expression: r.expression,
+      system: r.system,
+      characterName: r.characterName,
+      username: r.user?.username,
+      min: r.min,
+      max: r.max,
+      timestamp: r.createdAt.getTime(),
+    })));
+  } catch (err) {
+    console.error('dice/recent error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
