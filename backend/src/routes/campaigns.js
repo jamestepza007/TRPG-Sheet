@@ -42,18 +42,13 @@ router.post('/', requireRole('GM', 'ADMIN'), async (req, res) => {
 
 // PUT /api/campaigns/:id - update name/description/coverImage
 router.put('/:id', requireRole('GM', 'ADMIN'), async (req, res) => {
-  const { name, description, coverImage, gmSheetData } = req.body;
+  const { name, description, coverImage } = req.body;
   const campaign = await prisma.campaign.findUnique({ where: { id: req.params.id } });
   if (!campaign || (campaign.gmId !== req.user.id && req.user.role !== 'ADMIN'))
     return res.status(403).json({ error: 'Forbidden' });
   const updated = await prisma.campaign.update({
     where: { id: req.params.id },
-    data: {
-      ...(name !== undefined && { name }),
-      ...(description !== undefined && { description }),
-      ...(coverImage !== undefined && { coverImage }),
-      ...(gmSheetData !== undefined && { gmSheetData }),
-    }
+    data: { name, description, ...(coverImage !== undefined && { coverImage }) }
   });
   res.json(updated);
 });

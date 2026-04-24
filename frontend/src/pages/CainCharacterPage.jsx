@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api.js';
 import { getSystem } from '../utils/systems.js';
 import CainDiceRoller from '../components/CainDiceRoller.jsx';
-import FontSizeControl from '../components/FontSizeControl.jsx';
 import toast from 'react-hot-toast';
+import FontSizeControl from '../components/FontSizeControl.jsx';
 
 // ── CAIN style tokens ────────────────────────────────────────────
 const C = {
@@ -34,6 +34,7 @@ function DotRow({ value, max = 3, onChange, color = C.dark }) {
         <div key={i} onClick={() => onChange(value === i + 1 ? 0 : i + 1)}
           style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${color}`, background: i < value ? color : 'transparent', cursor: 'pointer', transition: 'background 0.15s' }} />
       ))}
+    <FontSizeControl />
     </div>
   );
 }
@@ -53,6 +54,7 @@ function CircleRow({ count, filled, onToggle, size = 16, color = C.dark, crossed
           </div>
         );
       })}
+    <FontSizeControl />
     </div>
   );
 }
@@ -71,6 +73,7 @@ function HookRow({ hook, index, onChange }) {
             style={{ width: 12, height: 16, borderRight: `2px solid ${i < hook.slashes ? C.dark : C.border}`, cursor: 'pointer' }} />
         ))}
       </div>
+    <FontSizeControl />
     </div>
   );
 }
@@ -81,6 +84,7 @@ function SectionBox({ title, children, style = {} }) {
     <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 10, ...style }}>
       <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>{title}</div>
       <div style={{ padding: '8px 10px' }}>{children}</div>
+    <FontSizeControl />
     </div>
   );
 }
@@ -112,6 +116,7 @@ function ExecutionBar({ stress, execMax, onStressChange, onInjury }) {
       <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginTop: 3 }}>
         Click to mark stress. When full → gain injury, execution max drops by 1.
       </div>
+    <FontSizeControl />
     </div>
   );
 }
@@ -143,6 +148,7 @@ function CATDisplay({ cat, missions, onChange, onMissionsChange }) {
             style={{ width: 22, height: 22, border: `1px solid ${C.borderDark}`, background: 'transparent', fontFamily: C.font, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
         </div>
       </div>
+    <FontSizeControl />
     </div>
   );
 }
@@ -179,6 +185,7 @@ function SinTrack({ sinBoxes, sinBoxesCrossed, sinTotal, onToggle, onTotalChange
         Sin overflow: Resistance check (1D6 + sin marks). 7+ = keep control.<br />
         On fail: permanently cross out 2 boxes. Give up.
       </div>
+    <FontSizeControl />
     </div>
   );
 }
@@ -244,6 +251,7 @@ function PortraitModal({ imageUrl, onConfirm, onCancel }) {
           <button onClick={onCancel} style={{ flex: 1, background: 'transparent', color: C.dark, border: `1px solid ${C.borderDark}`, fontFamily: C.fontSans, fontSize: 10, padding: '8px', cursor: 'pointer' }}>CANCEL</button>
         </div>
       </div>
+    <FontSizeControl />
     </div>
   );
 }
@@ -651,12 +659,12 @@ export default function CainCharacterPage() {
 
         </div> {/* end 2-col grid */}
 
-        {!cropSrc && <FontSizeControl />}
-        {/* Footer stamp */}
+                {/* Footer stamp */}
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: C.font, fontSize: 8, color: C.muted, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
           Report all changes to dormitory supervisor (see code C664) &nbsp;|&nbsp; If you suspect you are cursed, call 994 immediately &nbsp;|&nbsp; As above, so below &nbsp;|&nbsp; CASTLE
         </div>
       </div>
+    <FontSizeControl />
     </div>
   );
 }

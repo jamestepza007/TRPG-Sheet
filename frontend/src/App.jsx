@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import AudioSettings from './components/AudioSettings.jsx';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './hooks/useAuth.js';
 import Navbar from './components/Navbar.jsx';
@@ -37,16 +38,17 @@ export default function App() {
   return (
     <>
       <Navbar />
+      <AudioSettings />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/characters/cain/:id" element={<ProtectedRoute><CainCharacterPage /></ProtectedRoute>} />
+        <Route path="/campaigns/cain/:id" element={<ProtectedRoute roles={['GM','ADMIN']}><CainGMSheet /></ProtectedRoute>} />
         <Route path="/characters/:id" element={<ProtectedRoute><CharacterPage /></ProtectedRoute>} />
         <Route path="/campaigns/:id" element={<ProtectedRoute roles={['GM','ADMIN']}><CampaignPage /></ProtectedRoute>} />
         <Route path="/party/:id" element={<ProtectedRoute><PartyPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="/characters/cain/:id" element={<ProtectedRoute><CainCharacterPage /></ProtectedRoute>} />
-        <Route path="/campaigns/cain/:id" element={<ProtectedRoute roles={['GM','ADMIN']}><CainGMSheet /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

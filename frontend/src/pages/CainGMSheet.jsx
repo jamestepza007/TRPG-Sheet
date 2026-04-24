@@ -15,6 +15,7 @@ function SectionBox({ title, children, style = {}, titleBg = C.dark, titleColor 
     <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 10, ...style }}>
       <div style={{ background: titleBg, color: titleColor, fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>{title}</div>
       <div style={{ padding: '8px 10px' }}>{children}</div>
+    <FontSizeControl />
     </div>
   );
 }
@@ -30,6 +31,7 @@ function SlashTrack({ value, max, onChange, label }) {
         ))}
       </div>
       <div style={{ fontFamily: C.font, fontSize: 10, color: C.mid }}>{value} / {max}</div>
+    <FontSizeControl />
     </div>
   );
 }
@@ -44,6 +46,7 @@ function CATSelector({ value, onChange }) {
           {l}
         </div>
       ))}
+    <FontSizeControl />
     </div>
   );
 }
@@ -418,12 +421,12 @@ export default function CainGMSheet() {
           </div>
         </div>
 
-        <FontSizeControl />
         {/* Footer */}
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: C.font, fontSize: 8, color: C.muted, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
           REFER TO DOCTRINE TM451 IN CASE OF CATEGORY 5+ EVENT &nbsp;|&nbsp; As above, so below &nbsp;|&nbsp; CASTLE DIVISION
         </div>
       </div>
+    <FontSizeControl />
     </div>
   );
 }

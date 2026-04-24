@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { getAudioSettings } from './AudioSettings.jsx';
 import api from '../utils/api.js';
 import { useAuthStore } from '../hooks/useAuth.js';
 import toast from 'react-hot-toast';
@@ -93,7 +94,7 @@ function playDiceRollSound() {
     const filter = ctx.createBiquadFilter();
     filter.type = 'bandpass'; filter.frequency.value = 1200; filter.Q.value = 2;
     src.buffer = buf; src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.setValueAtTime(0.35, now);
     gain.gain.linearRampToValueAtTime(0, now + 0.04);
     src.start(now);
   } catch {}
@@ -131,55 +132,60 @@ function playSuspenseSound() {
   } catch {}
 }
 
-function playLegendarySound() {
+function playLegendarySound(vol = 1.0) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
+    // Master gain — all sound routes through here
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(vol, now);
+    master.connect(ctx.destination);
 
-    // Choir — lower octave, all sine, warmer tone
     [98, 130.81, 164.81, 196, 261.63, 329.63, 392].forEach((f, i) => {
       const o = ctx.createOscillator(), g = ctx.createGain();
       const lp = ctx.createBiquadFilter();
-      lp.type = 'lowpass'; lp.frequency.value = 800; // cut harsh highs
-      o.connect(lp); lp.connect(g); g.connect(ctx.destination);
+      lp.type = 'lowpass'; lp.frequency.value = 800;
+      o.connect(lp); lp.connect(g); g.connect(master);
       o.type = 'sine';
       o.frequency.setValueAtTime(f * 0.8, now + i * 0.07);
       o.frequency.linearRampToValueAtTime(f, now + i * 0.07 + 0.2);
       g.gain.setValueAtTime(0, now + i * 0.07);
-      g.gain.linearRampToValueAtTime(0.13, now + i * 0.07 + 0.15);
-      g.gain.linearRampToValueAtTime(0.08, now + i * 0.07 + 0.6);
+      g.gain.linearRampToValueAtTime(0.18, now + i * 0.07 + 0.15);
+      g.gain.linearRampToValueAtTime(0.12, now + i * 0.07 + 0.6);
       g.gain.linearRampToValueAtTime(0, now + 3.2);
       o.start(now + i * 0.07); o.stop(now + 3.6);
     });
 
-    // Impact — same but filter out harsh freq
     const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(ctx.sampleRate*0.025));
     const src = ctx.createBufferSource(), gn = ctx.createGain();
     const impFilt = ctx.createBiquadFilter();
     impFilt.type = 'lowpass'; impFilt.frequency.value = 600;
-    src.buffer = buf; src.connect(impFilt); impFilt.connect(gn); gn.connect(ctx.destination);
-    gn.gain.setValueAtTime(0.6, now); gn.gain.linearRampToValueAtTime(0, now+0.2);
+    src.buffer = buf; src.connect(impFilt); impFilt.connect(gn); gn.connect(master);
+    gn.gain.setValueAtTime(0.8, now); gn.gain.linearRampToValueAtTime(0, now+0.2);
     src.start(now);
 
-    // Sparkle — lower and quieter, max 1200Hz
     [523, 587, 659, 784, 880, 1047].forEach((f, i) => {
       const o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
+      o.connect(g); g.connect(master);
       o.type = 'sine'; o.frequency.value = f;
       const t = now + 0.3 + i * 0.1;
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.1, t+0.05);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.14, t+0.05);
       g.gain.linearRampToValueAtTime(0, t+0.3);
       o.start(t); o.stop(t+0.4);
     });
   } catch {}
 }
 
-function playCatastrophicSound() {
+function playCatastrophicSound(vol = 1.0) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
+    // Master gain
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(vol, now);
+    master.connect(ctx.destination);
 
     // Heavy thud first — punch on impact
     const thudBuf = ctx.createBuffer(1, ctx.sampleRate * 0.35, ctx.sampleRate);
@@ -188,8 +194,8 @@ function playCatastrophicSound() {
     const thudSrc = ctx.createBufferSource(), thudGain = ctx.createGain();
     const thudFilt = ctx.createBiquadFilter(); thudFilt.type = 'lowpass'; thudFilt.frequency.value = 180;
     thudSrc.buffer = thudBuf;
-    thudSrc.connect(thudFilt); thudFilt.connect(thudGain); thudGain.connect(ctx.destination);
-    thudGain.gain.setValueAtTime(0.7, now); thudGain.gain.linearRampToValueAtTime(0, now+0.4);
+    thudSrc.connect(thudFilt); thudFilt.connect(thudGain); thudGain.connect(master);
+    thudGain.gain.setValueAtTime(0.9, now); thudGain.gain.linearRampToValueAtTime(0, now+0.4);
     thudSrc.start(now);
 
     // Descending ominous drones — audible but not piercing
@@ -201,7 +207,7 @@ function playCatastrophicSound() {
       o.frequency.setValueAtTime(f * 1.3, now + i * 0.18);
       o.frequency.linearRampToValueAtTime(f * 0.75, now + i * 0.18 + 0.7);
       g.gain.setValueAtTime(0, now + i * 0.18);
-      g.gain.linearRampToValueAtTime(0.09, now + i * 0.18 + 0.2);
+      g.gain.linearRampToValueAtTime(0.12, now + i * 0.18 + 0.2);
       g.gain.linearRampToValueAtTime(0.05, now + i * 0.18 + 0.8);
       g.gain.linearRampToValueAtTime(0, now + 3.2);
       o.start(now + i * 0.18); o.stop(now + 3.5);
@@ -209,7 +215,7 @@ function playCatastrophicSound() {
 
     // Short dissonant sting
     const sting = ctx.createOscillator(), stingG = ctx.createGain();
-    sting.connect(stingG); stingG.connect(ctx.destination);
+    sting.connect(stingG); stingG.connect(master);
     sting.type = 'sawtooth'; sting.frequency.value = 220;
     sting.frequency.linearRampToValueAtTime(110, now + 0.5);
     stingG.gain.setValueAtTime(0, now + 0.1);
@@ -410,10 +416,7 @@ function CriticalOverlay({ type, result, expr, onDismiss, revealed }) {
     return pool[Math.floor(Math.random() * pool.length)];
   });
 
-  useEffect(() => {
-    const t = setTimeout(() => isCrit ? playLegendarySound() : playCatastrophicSound(), 80);
-    return () => clearTimeout(t);
-  }, []);
+  // Sound played by SuspenseScreen onReveal with correct volume
 
   if (isCrit) return (
     <div className="leg-bg" style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', animation:'fadeInOv 0.3s ease' }}
@@ -539,7 +542,7 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
     if (!trimmed) return;
     setRolling(true);
     // Play dice rattle immediately on roll
-    playDiceRollSound();
+    if (getAudioSettings().diceSound !== false) playDiceRollSound();
     try {
       const parsed = parseDiceExpression(trimmed);
       const res = rollParsed(parsed);
@@ -560,7 +563,7 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
       const isCrit = single && res.total === max;
       const isFail = single && res.total === min;
 
-      if (isCrit || isFail) {
+      if ((isCrit || isFail) && getAudioSettings().criticalEffect !== false) {
         // ── CRITICAL: inject black DOM veil BEFORE React renders result ──
         const veil = document.createElement('div');
         veil.id = '__crit-veil__';
@@ -571,12 +574,10 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
           type, result: res.total, expr: trimmed, revealed: false,
           breakdown: res.breakdown, flatMod: res.flatMod, min, max,
         });
-        // Remove veil after React mounts suspense screen
         requestAnimationFrame(() => requestAnimationFrame(() => {
           document.getElementById('__crit-veil__')?.remove();
         }));
       } else {
-        // Normal roll — show result immediately
         setResult({ ...res, expr: trimmed, min, max });
       }
     } catch (err) {
@@ -670,8 +671,11 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
               max: critical.max,
             });
             setCritical(prev => prev ? { ...prev, revealed: true } : null);
-            if (critical.type === 'max') setTimeout(playLegendarySound, 50);
-            else setTimeout(playCatastrophicSound, 50);
+            const vol = getAudioSettings().criticalSoundVol ?? 1.0;
+            if (vol > 0) {
+              if (critical.type === 'max') setTimeout(() => playLegendarySound(vol), 50);
+              else setTimeout(() => playCatastrophicSound(vol), 50);
+            }
           }}
         />
       )}

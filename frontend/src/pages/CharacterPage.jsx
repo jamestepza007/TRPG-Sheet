@@ -111,6 +111,7 @@ function PortraitCropModal({ imageUrl, onConfirm, onCancel }) {
           </button>
         </div>
       </div>
+    <FontSizeControl dark={true} />
     </div>
   );
 }
@@ -179,6 +180,7 @@ function VitalsBar({ label, current, max, color, step = 1, onChangeCurrent, onCh
             style={{ width: '100%', textAlign: 'center', fontFamily: 'Cinzel, serif', fontSize: 16, color: '#666', padding: '6px 4px', background: '#161616', border: '1px solid #2a2a2a', borderRadius: 6, outline: 'none' }} />
         </div>
       </div>
+    <FontSizeControl dark={true} />
     </div>
   );
 }
@@ -213,6 +215,7 @@ function XPRow({ level, xp, maxXP, onXPChange, onLevelChange, onLevelUp }) {
           <button onClick={() => onXPChange((xp || 0) + 1)} style={{ background: '#1f1f1f', border: '1px solid #c9a84c44', color: '#c9a84c', width: 30, height: 30, borderRadius: 6, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
         </div>
       </div>
+    <FontSizeControl dark={true} />
     </div>
   );
 }
@@ -238,6 +241,7 @@ function StatBox({ statKey, label, value, min, max, getModifier, onChange, onRol
         onMouseLeave={e => e.currentTarget.style.background = '#1a1a1a'}>
         🎲 {statKey}
       </button>
+    <FontSizeControl dark={true} />
     </div>
   );
 }
@@ -489,7 +493,7 @@ export default function CharacterPage() {
           </div>
         </div>
       </div>
-      {!cropSrc && <FontSizeControl dark={true} />}
+          <FontSizeControl dark={true} />
     </div>
   );
 }
