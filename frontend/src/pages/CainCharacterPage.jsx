@@ -264,6 +264,7 @@ export default function CainCharacterPage() {
   const [sheet, setSheet] = useState({});
   const [saveStatus, setSaveStatus] = useState('saved');
   const [cropSrc, setCropSrc] = useState(null);
+  const [activeTab, setActiveTab] = useState('sheet');
   const autoSaveTimer = useRef(null);
   const sheetRef = useRef({});
   const charRef = useRef(null);
@@ -324,9 +325,10 @@ export default function CainCharacterPage() {
   const resilient = sheet.resilientAgenda || false;
   const visitationRight = sheet.visitationRight || false;   // +1 max injury
   const immaculate = sheet.immaculate || false;             // +1 max injury  
-  const privateRooms = sheet.privateRooms || false;         // +1 max stress (exec)
+  const privateRooms = sheet.privateRooms || false;         // +1 max stress
+  const leaveOfAbsence = sheet.leaveOfAbsence || false;     // +1 max stress (exec)
   const injuryMax = 3 + (visitationRight ? 1 : 0) + (immaculate ? 1 : 0);
-  const execBase = 6 + (privateRooms ? 1 : 0);
+  const execBase = 6 + (privateRooms ? 1 : 0) + (leaveOfAbsence ? 1 : 0);
   const execMax = resilient ? execBase : Math.max(1, execBase - injuries);
 
   const statusColor = { saved: '#2a5a2a', saving: '#5a4a00', dirty: '#888', error: '#8b0000' }[saveStatus];
@@ -453,6 +455,7 @@ export default function CainCharacterPage() {
               { key: 'visitationRight', val: visitationRight, label: 'VISITATION RIGHT', sub: '12S — +1 max injury' },
               { key: 'immaculate', val: immaculate, label: 'IMMACULATE DEFIANCE OF HEAVEN', sub: 'Faith bond — +1 max injury' },
               { key: 'privateRooms', val: privateRooms, label: 'PRIVATE ROOMS', sub: '8S — +1 max stress' },
+              { key: 'leaveOfAbsence', val: leaveOfAbsence, label: 'LEAVE OF ABSENCE', sub: '+1 max stress' },
             ].map(({ key, val, label, sub }) => (
               <div key={key} onClick={() => update(key, !val)}
                 style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, padding: '3px 6px', border: `1px solid ${val ? C.borderDark : C.border}`, background: val ? 'rgba(0,0,0,0.05)' : 'transparent', cursor: 'pointer', userSelect: 'none' }}>
@@ -660,6 +663,7 @@ export default function CainCharacterPage() {
         </div> {/* end 2-col grid */}
 
                 {/* Footer stamp */}
+      </div>)}
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: C.font, fontSize: 8, color: C.muted, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
           Report all changes to dormitory supervisor (see code C664) &nbsp;|&nbsp; If you suspect you are cursed, call 994 immediately &nbsp;|&nbsp; As above, so below &nbsp;|&nbsp; CASTLE
         </div>

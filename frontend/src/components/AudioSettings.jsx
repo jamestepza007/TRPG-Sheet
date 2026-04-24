@@ -29,6 +29,17 @@ let _settings = loadSettings();
 const _listeners = new Set();
 
 export function getAudioSettings() { return _settings; }
+
+// Called by SSE handler when GM pushes BGM change
+export function handleBgmSync(data) {
+  if (!_settings.bgmSyncEnabled) return;
+  if (data.enabled && data.trackId) {
+    setAudioSetting('bgmEnabled', true);
+    setAudioSetting('bgmTrackId', data.trackId);
+  } else if (data.enabled === false) {
+    setAudioSetting('bgmEnabled', false);
+  }
+}
 export function setAudioSetting(key, value) {
   _settings = { ..._settings, [key]: value };
   saveSettings(_settings);
@@ -174,6 +185,8 @@ export default function AudioSettings() {
 
           {/* BGM Section */}
           <div style={{ marginTop: 2 }}>
+            <Toggle label="Allow GM BGM Sync" sub="Let GM control your background music"
+              value={s.bgmSyncEnabled !== false} onChange={v => set('bgmSyncEnabled', v)} />
             <Toggle label="Background Music" sub="BGM during play"
               value={s.bgmEnabled} onChange={v => set('bgmEnabled', v)} />
 

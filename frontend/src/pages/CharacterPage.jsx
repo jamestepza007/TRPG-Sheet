@@ -257,11 +257,21 @@ export default function CharacterPage() {
   const [diceExpr, setDiceExpr] = useState('2d6');
   const [rollTrigger, setRollTrigger] = useState(0);
   const [cropSrc, setCropSrc] = useState(null); // portrait crop modal
+  const [partyData, setPartyData] = useState(null);
+  const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'notes'
   const autoSaveTimer = useRef(null);
   const sheetRef = useRef({});
   const charRef = useRef(null);
 
-  useEffect(() => { fetchChar(); }, [id]);
+  useEffect(() => { fetchChar(); fetchParty(); }, [id]);
+
+  const fetchParty = async () => {
+    try {
+      const res = await api.get('/parties/mine');
+      const myParty = res.data.find(m => m.party?.members?.some(mb => mb.character?.id === id));
+      if (myParty) setPartyData(myParty.party);
+    } catch {}
+  };
 
   const fetchChar = async () => {
     try {

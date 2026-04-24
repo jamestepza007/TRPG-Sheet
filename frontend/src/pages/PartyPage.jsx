@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api.js';
+import { handleBgmSync, useAudioSettings } from '../components/AudioSettings.jsx';
+import { useAuthStore } from '../hooks/useAuth.js';
 import { getSystem } from '../utils/systems.js';
 import toast from 'react-hot-toast';
 
@@ -200,6 +202,11 @@ export default function PartyPage() {
   const [partyData, setPartyData] = useState(null);
   const [system, setSystem] = useState(null);
   const [connected, setConnected] = useState(false);
+  const [inventory, setInventory] = useState('');
+  const [invSaving, setInvSaving] = useState(false);
+  const [bgmTracks, setBgmTracks] = useState([]);
+  const audioSettings = useAudioSettings();
+  const { user } = useAuthStore();
   const sseRef = useRef(null);
 
   useEffect(() => {
@@ -211,9 +218,11 @@ export default function PartyPage() {
     try {
       const res = await api.get('/parties/mine');
       const myParty = res.data.find(m => m.party.id === id);
+      api.get('/bgm').then(r => setBgmTracks(r.data || [])).catch(() => {});
       if (!myParty) { toast.error('Party not found'); return navigate('/'); }
       setPartyData(myParty.party);
       setSystem(getSystem(myParty.party.campaign.system));
+      setInventory(myParty.party.inventory || '');
       startSSE(myParty.party);
     } catch { navigate('/'); }
   };
@@ -229,6 +238,9 @@ export default function PartyPage() {
     es.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
+        if (data.type === 'bgm_sync') {
+          handleBgmSync(data);
+        }
         if (data.type === 'character_updated') {
           setPartyData(prev => !prev ? prev : {
             ...prev,
@@ -241,6 +253,13 @@ export default function PartyPage() {
         }
       } catch {}
     };
+  };
+
+  const saveInventory = async (val) => {
+    setInvSaving(true);
+    try { await api.put(`/parties/${id}/inventory`, { inventory: val }); }
+    catch {}
+    setInvSaving(false);
   };
 
   const leaveParty = async () => {
@@ -283,6 +302,17 @@ export default function PartyPage() {
           </div>
         </div>
 
+        {/* CAIN Party Inventory */}
+        <div style={{ background: C.bg, border: `1px solid ${C.borderDark}`, marginBottom: 12, padding: '8px 12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.15em', color: C.mid }}>◈ UNIT INVENTORY / SHARED NOTES</div>
+            <span style={{ fontFamily: C.font, fontSize: 7, color: C.muted }}>{invSaving ? 'filing...' : 'filed'}</span>
+          </div>
+          <textarea value={inventory} onChange={e => { setInventory(e.target.value); clearTimeout(window._invTimer); window._invTimer = setTimeout(() => saveInventory(e.target.value), 1500); }}
+            placeholder="Shared equipment, mission notes..."
+            rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 6 }} />
+        </div>
+
         <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.2em', color: C.mid, marginBottom: 10, textTransform: 'uppercase' }}>◈ Active Exorcists — Field Status</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
           {partyData.members.map(member => (
@@ -318,6 +348,40 @@ export default function PartyPage() {
           </div>
         </div>
         <div className="section-title" style={{ color: acc }}>⚔ Party</div>
+        {/* GM BGM Sync Panel */}
+        {partyData?.campaign?.gmId === user?.id && (
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div className="section-title" style={{ color: acc, margin: 0 }}>🎵 BGM Sync</div>
+              <span style={{ fontSize: 10, color: '#555' }}>GM controls — syncs to all players</span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {bgmTracks.map(t => (
+                <button key={t.youtubeId} onClick={() => {
+                  api.post(`/parties/${id}/bgm-sync`, { trackId: t.youtubeId, trackLabel: t.label, enabled: true });
+                }} style={{ background: audioSettings.bgmTrackId === t.youtubeId ? acc : 'transparent', border: `1px solid ${acc}44`, color: audioSettings.bgmTrackId === t.youtubeId ? '#000' : acc, fontFamily: 'Cinzel, serif', fontSize: 10, padding: '5px 12px', cursor: 'pointer', borderRadius: 4 }}>
+                  ▶ {t.label}
+                </button>
+              ))}
+              <button onClick={() => api.post(`/parties/${id}/bgm-sync`, { enabled: false })}
+                style={{ background: 'transparent', border: '1px solid #f8717144', color: '#f87171', fontFamily: 'Cinzel, serif', fontSize: 10, padding: '5px 12px', cursor: 'pointer', borderRadius: 4 }}>
+                ■ Stop BGM
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Party Inventory */}
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div className="section-title" style={{ color: acc, margin: 0 }}>🎒 Party Inventory</div>
+            <span style={{ fontSize: 10, color: '#555' }}>{invSaving ? 'Saving…' : 'Auto-saved'}</span>
+          </div>
+          <textarea value={inventory} onChange={e => { setInventory(e.target.value); clearTimeout(window._invTimer); window._invTimer = setTimeout(() => saveInventory(e.target.value), 1500); }}
+            placeholder="Shared party items, gold, notes..."
+            rows={5} style={{ width: '100%' }} />
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
           {partyData.members.map(member => (
             <DWMemberCard key={member.id} member={member} system={system} />

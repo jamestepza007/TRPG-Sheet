@@ -118,6 +118,16 @@ export default function DashboardPage() {
 
   const closeModal = () => setModal(null);
 
+  const renameChar = async (charId, newName) => {
+    if (!newName.trim()) return;
+    try {
+      await api.put(`/characters/${charId}`, { name: newName.trim() });
+      setCharacters(prev => prev.map(c => c.id === charId ? { ...c, name: newName.trim() } : c));
+      toast.success('Renamed!');
+    } catch { toast.error('Failed to rename'); }
+    setEditingCharId(null);
+  };
+
   const createCharacter = async (e) => {
     e.preventDefault();
     try {
@@ -225,7 +235,22 @@ export default function DashboardPage() {
 
                 {/* Info overlaid at bottom */}
                 <div style={{ position: 'relative', zIndex: 1, padding: '100px 14px 14px' }}>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: 17, color: acc, marginBottom: 2, textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{char.name}</div>
+                  {editingCharId === char.id ? (
+                    <input
+                      autoFocus
+                      value={editingCharName}
+                      onChange={e => setEditingCharName(e.target.value)}
+                      onBlur={() => renameChar(char.id, editingCharName)}
+                      onKeyDown={e => { if (e.key === 'Enter') renameChar(char.id, editingCharName); if (e.key === 'Escape') setEditingCharId(null); }}
+                      onClick={e => e.stopPropagation()}
+                      style={{ fontFamily: 'Cinzel, serif', fontSize: 15, color: acc, background: 'rgba(0,0,0,0.6)', border: `1px solid ${acc}`, borderRadius: 4, padding: '2px 6px', width: '100%', marginBottom: 2 }}
+                    />
+                  ) : (
+                    <div
+                      onDoubleClick={e => { e.stopPropagation(); setEditingCharId(char.id); setEditingCharName(char.name); }}
+                      title="Double-click to rename"
+                      style={{ fontFamily: 'Cinzel, serif', fontSize: 17, color: acc, marginBottom: 2, textShadow: '0 2px 8px rgba(0,0,0,0.8)', cursor: 'text' }}>{char.name} <span style={{ fontSize: 9, opacity: 0.4 }}>✎</span></div>
+                  )}
                   <div style={{ color: '#888', fontSize: 12, textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>{char.sheetData?.class || '—'} · Lv.{char.sheetData?.level || 1}</div>
                   {char.sheetData?.currentHP !== undefined && (
                     <div style={{ marginTop: 10 }}>

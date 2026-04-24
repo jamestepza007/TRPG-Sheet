@@ -151,7 +151,11 @@ export default function CampaignPage() {
                   const sd = member.character.sheetData || {};
                   const mod = system.getModifier;
                   return (
-                    <div key={member.id} style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 18 }}>
+                    <div key={member.id} style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 18, position: 'relative' }}>
+                      <button onClick={() => navigate(member.character.system === 'CAIN' ? `/characters/cain/${member.character.id}` : `/characters/${member.character.id}`)}
+                        style={{ position: 'absolute', top: 10, right: 10, background: 'transparent', border: `1px solid ${acc}44`, color: acc, fontFamily: 'Cinzel, serif', fontSize: 10, padding: '3px 8px', cursor: 'pointer', borderRadius: 4 }}>
+                        View Sheet
+                      </button>
                       {/* Name + kick */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <div>
