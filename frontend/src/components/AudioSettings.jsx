@@ -36,8 +36,10 @@ export function handleBgmSync(data) {
   if (data.enabled && data.trackId) {
     setAudioSetting('bgmEnabled', true);
     setAudioSetting('bgmTrackId', data.trackId);
+    setAudioSetting('bgmDirectId', data.trackId); // direct YouTube ID bypasses track list
   } else if (data.enabled === false) {
     setAudioSetting('bgmEnabled', false);
+    setAudioSetting('bgmDirectId', null);
   }
 }
 export function setAudioSetting(key, value) {
@@ -151,15 +153,17 @@ export default function AudioSettings() {
     }).catch(() => {});
   }, []);
 
-  const currentTrack = tracks.find(t => t.youtubeId === s.bgmTrackId) || tracks[0];
+  // bgmDirectId = direct YouTube ID from GM sync or manual URL input
+  // takes priority over track list selection
+  const effectiveId = s.bgmDirectId || (tracks.find(t => t.youtubeId === s.bgmTrackId)?.youtubeId) || tracks[0]?.youtubeId;
 
   return (
     <>
       {/* Hidden YouTube BGM player */}
       {s.bgmEnabled && (
         <YoutubeBGM
-          key={currentTrack?.youtubeId}
-          trackId={currentTrack?.youtubeId}
+          key={effectiveId}
+          trackId={effectiveId}
           volume={s.bgmVolume}
           playing={s.bgmEnabled}
         />
@@ -192,6 +196,21 @@ export default function AudioSettings() {
 
             {s.bgmEnabled && (
               <div style={{ paddingTop: 8 }}>
+                {/* Direct URL input */}
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, color: '#888', fontFamily: 'Cinzel, serif', marginBottom: 4 }}>OR PLAY URL DIRECTLY</div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <input id="bgm-direct-url" type="text" placeholder="YouTube URL or ID..."
+                      style={{ flex: 1, background: '#0d0d0d', border: '1px solid #333', color: '#e8e8e8', fontSize: 9, padding: '3px 6px', fontFamily: 'monospace', borderRadius: 3 }} />
+                    <button onClick={() => {
+                      const val = document.getElementById('bgm-direct-url').value.trim();
+                      const match = val.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                      const ytId = match ? match[1] : (val.length === 11 ? val : null);
+                      if (ytId) { set('bgmDirectId', ytId); set('bgmEnabled', true); document.getElementById('bgm-direct-url').value = ''; }
+                    }} style={{ background: '#c9a84c', border: 'none', color: '#000', fontSize: 9, padding: '3px 8px', cursor: 'pointer', fontFamily: 'Cinzel, serif', borderRadius: 3 }}>▶</button>
+                  </div>
+                </div>
+
                 {/* Volume */}
                 <div style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>

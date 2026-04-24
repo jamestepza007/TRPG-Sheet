@@ -217,7 +217,7 @@ export default function DashboardPage() {
         ) : (
           <div className="grid-3">
             {characters.map(char => (
-              <div key={char.id} onClick={() => navigate(`/characters/${char.id}`)}
+              <div key={char.id} onClick={() => { if (editingCharId === char.id) return; navigate(char.system === 'CAIN' ? `/characters/cain/${char.id}` : `/characters/${char.id}`); }}
                 style={{ background: '#161616', border: '1px solid #3d2510', borderRadius: 8, overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.2s, box-shadow 0.2s', position: 'relative', minHeight: 200 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = acc; e.currentTarget.style.boxShadow = `0 0 24px rgba(201,168,76,0.12)`; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#3d2510'; e.currentTarget.style.boxShadow = 'none'; }}>

@@ -4,6 +4,7 @@ import api from '../utils/api.js';
 import { getSystem } from '../utils/systems.js';
 import DiceRoller from '../components/DiceRoller.jsx';
 import toast from 'react-hot-toast';
+import { handleBgmSync } from '../components/AudioSettings.jsx';
 
 function VitalMini({ label, current, max, color }) {
   const pct = Math.max(0, Math.min(100, ((current || 0) / (max || 1)) * 100));
@@ -26,6 +27,9 @@ function VitalMini({ label, current, max, color }) {
 export default function CampaignPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [bgmUrl, setBgmUrl] = useState('');
+  const [bgmQueue, setBgmQueue] = useState([]);
+  const [bgmPlaying, setBgmPlaying] = useState(null);
   const [campaign, setCampaign] = useState(null);
   const [system, setSystem] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -138,6 +142,85 @@ export default function CampaignPage() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
+          {/* BGM Sync */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div className="section-title" style={{ color: acc, margin: 0 }}>🎵 BGM Sync</div>
+              <span style={{ fontSize: 10, color: '#555' }}>Syncs to all players in party</span>
+            </div>
+
+            {/* Add to queue */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <input value={bgmUrl} onChange={e => setBgmUrl(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && (() => {
+                  if (!bgmUrl.trim()) return;
+                  const match = bgmUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                  const ytId = match ? match[1] : bgmUrl.trim();
+                  if (ytId) { setBgmQueue(q => [...q, { id: ytId, url: bgmUrl }]); setBgmUrl(''); }
+                })()}
+                placeholder="Paste YouTube URL..."
+                style={{ flex: 1, fontFamily: 'Share Tech Mono, monospace', fontSize: 12 }} />
+              <button onClick={() => {
+                if (!bgmUrl.trim()) return;
+                const match = bgmUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                const ytId = match ? match[1] : bgmUrl.trim();
+                if (ytId.length !== 11) return toast.error('Invalid YouTube URL');
+                setBgmQueue(q => [...q, { id: ytId, url: bgmUrl }]);
+                setBgmUrl('');
+              }} className="btn-ghost btn-sm">+ Add</button>
+              <button onClick={() => {
+                if (!bgmUrl.trim()) return;
+                const match = bgmUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                const ytId = match ? match[1] : bgmUrl.trim();
+                if (!ytId || ytId.length !== 11) return toast.error('Invalid YouTube URL');
+                if (campaign?.party?.id) {
+                  api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: ytId, enabled: true });
+                  handleBgmSync({ enabled: true, trackId: ytId }); // GM also hears it
+                  setBgmPlaying(ytId);
+                  toast.success('▶ Playing for all players');
+                }
+              }} className="btn-primary btn-sm">▶ Play Now</button>
+            </div>
+
+            {/* Queue */}
+            {bgmQueue.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+                {bgmQueue.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: bgmPlaying === item.id ? `${acc}18` : 'rgba(0,0,0,0.2)', border: `1px solid ${bgmPlaying === item.id ? acc+'44' : '#2a2a2a'}`, borderRadius: 4, padding: '6px 10px' }}>
+                    <button onClick={() => {
+                      if (campaign?.party?.id) {
+                        api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: item.id, enabled: true });
+                        handleBgmSync({ enabled: true, trackId: item.id }); // GM also hears it
+                        setBgmPlaying(item.id);
+                        toast.success('▶ Playing for all players');
+                      }
+                    }} style={{ background: 'transparent', border: 'none', color: bgmPlaying === item.id ? acc : '#888', cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0 }}>
+                      {bgmPlaying === item.id ? '▶' : '○'}
+                    </button>
+                    <span style={{ flex: 1, fontFamily: 'Share Tech Mono, monospace', fontSize: 10, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.url}
+                    </span>
+                    <button onClick={() => setBgmQueue(q => q.filter((_, j) => j !== i))}
+                      style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, padding: 0, flexShrink: 0 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Stop */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 10, color: '#555' }}>Players with BGM Sync enabled will auto-play</span>
+              <button onClick={() => {
+                if (campaign?.party?.id) {
+                  api.post(`/parties/${campaign.party.id}/bgm-sync`, { enabled: false });
+                  handleBgmSync({ enabled: false }); // GM also stops
+                  setBgmPlaying(null);
+                  toast.success('■ BGM stopped');
+                }
+              }} className="btn-ghost btn-sm" style={{ color: '#f87171', borderColor: '#f8717144' }}>■ Stop All</button>
+            </div>
+          </div>
+
           {/* Party members */}
           <div>
             <div className="section-title" style={{ color: acc }}>⚔ Party Members</div>

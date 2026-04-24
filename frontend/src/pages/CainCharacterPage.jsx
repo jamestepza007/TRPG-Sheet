@@ -264,13 +264,50 @@ export default function CainCharacterPage() {
   const [sheet, setSheet] = useState({});
   const [saveStatus, setSaveStatus] = useState('saved');
   const [cropSrc, setCropSrc] = useState(null);
+  const [partyData, setPartyData] = useState(null);
+  const sseRef = useRef(null);
   const [activeTab, setActiveTab] = useState('sheet');
   const autoSaveTimer = useRef(null);
   const sheetRef = useRef({});
   const charRef = useRef(null);
   const sys = getSystem('CAIN');
 
-  useEffect(() => { fetchChar(); }, [id]);
+  useEffect(() => {
+    fetchChar();
+    fetchParty();
+    return () => { sseRef.current?.close(); };
+  }, [id]);
+
+  const fetchParty = async () => {
+    try {
+      const res = await api.get('/parties/mine');
+      const myParty = res.data.find(m => m.party?.members?.some(mb => mb.character?.id === id));
+      if (myParty) {
+        setPartyData(myParty.party);
+        // Start SSE for realtime updates
+        if (sseRef.current) sseRef.current.close();
+        const token = localStorage.getItem('token');
+        const baseUrl = import.meta.env.VITE_API_URL || '/api';
+        const es = new EventSource(`${baseUrl}/sse/party/${myParty.party.id}?token=${token}`);
+        sseRef.current = es;
+        es.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.type === 'character_updated') {
+              setPartyData(prev => !prev ? prev : {
+                ...prev,
+                members: prev.members.map(m =>
+                  m.character.id === data.characterId
+                    ? { ...m, character: { ...m.character, sheetData: data.sheetData, name: data.name } }
+                    : m
+                )
+              });
+            }
+          } catch {}
+        };
+      }
+    } catch {}
+  };
 
   const fetchChar = async () => {
     try {
@@ -447,7 +484,7 @@ export default function CainCharacterPage() {
             </div>
             <div style={{ marginTop: 6 }}>
               <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid }}>IMPROVEMENTS:</div>
-              <CircleRow count={7} filled={sheet.skillImprovements || 0} onToggle={i => update('skillImprovements', i < (sheet.skillImprovements || 0) ? i : i + 1)} size={14} />
+              <CircleRow count={6} filled={sheet.skillImprovements || 0} onToggle={i => update('skillImprovements', i < (sheet.skillImprovements || 0) ? i : i + 1)} size={14} />
             </div>
           </SectionBox>
         </div>
@@ -668,9 +705,59 @@ export default function CainCharacterPage() {
 
         </div> {/* end LEFT COLUMN */}
 
-        {/* ── RIGHT COLUMN: Dice Roller (sticky) ── */}
-        <div style={{ position: 'sticky', top: 12, alignSelf: 'flex-start' }}>
-          <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 10 }}>
+        {/* ── RIGHT COLUMN: Party + Dice Roller (sticky) ── */}
+        <div style={{ position: 'sticky', top: 12, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+          {/* Party Panel */}
+          {partyData && (
+            <div style={{ border: `1px solid ${C.borderDark}`, background: C.bg }}>
+              <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>
+                UNIT — {partyData.campaign?.name || 'PARTY'}
+              </div>
+              <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {partyData.members?.map(m => {
+                  const sd = m.character?.sheetData || {};
+                  const isMe = m.character?.id === id;
+                  const cat = sd.cat || 1;
+                  const inj = sd.injuries || 0;
+                  const eMax = sd.resilientAgenda ? 6 : Math.max(1, 6 - inj);
+                  const str = sd.stress || 0;
+                  return (
+                    <div key={m.id} style={{ border: `1px solid ${isMe ? C.borderDark : C.border}`, background: isMe ? 'rgba(0,0,0,0.05)' : 'transparent', padding: '5px 7px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.dark }}>{m.character?.name}{isMe ? ' ★' : ''}</span>
+                        <span style={{ fontFamily: C.font, fontSize: 8, color: C.muted }}>CAT {['I','II','III','IV','V'][cat-1]}</span>
+                      </div>
+                      <div style={{ marginBottom: 2 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
+                          <span style={{ fontFamily: C.fontSans, fontSize: 7, color: C.muted }}>EXEC</span>
+                          <span style={{ fontFamily: C.font, fontSize: 7, color: str >= eMax ? C.red : C.muted }}>{eMax - str}/{eMax}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 1 }}>
+                          {Array.from({ length: eMax }, (_, i) => (
+                            <div key={i} style={{ flex: 1, height: 5, background: i < str ? C.dark : 'transparent', border: `1px solid ${C.borderDark}` }} />
+                          ))}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontFamily: C.font, fontSize: 7, color: C.muted }}>{m.user?.username}</div>
+                        {(sd.injuries || 0) > 0 && (
+                          <div style={{ display: 'flex', gap: 1 }}>
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', border: `1px solid ${C.red}`, background: i < (sd.injuries || 0) ? C.red : 'transparent' }} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Dice Roller */}
+          <div style={{ border: `1px solid ${C.borderDark}` }}>
             <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>DICE ROLLER</div>
             <div style={{ padding: '10px' }}>
               <CainDiceRoller sheet={sheet} system="CAIN" characterName={character.name} />
