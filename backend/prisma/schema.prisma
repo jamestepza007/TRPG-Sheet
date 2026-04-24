@@ -32,6 +32,7 @@ model User {
 
   characters   Character[]
   campaigns    Campaign[]    @relation("GMCampaigns")
+  diceLogs     DiceLog[]
   partyMembers PartyMember[]
 }
 
