@@ -89,17 +89,23 @@ router.get('/recent', async (req, res) => {
     const sinceDate = new Date(since);
     const rolls = await prisma.diceLog.findMany({
       where: { createdAt: { gt: sinceDate } },
-      include: { user: { select: { username: true } } },
       orderBy: { createdAt: 'asc' },
       take: 20,
     });
+    // Fetch usernames separately
+    const userIds = [...new Set(rolls.map(r => r.userId))];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, username: true }
+    });
+    const userMap = Object.fromEntries(users.map(u => [u.id, u.username]));
     res.json(rolls.map(r => ({
       id: r.id,
       result: r.result,
       expression: r.expression,
       system: r.system,
       characterName: r.characterName,
-      username: r.user?.username,
+      username: userMap[r.userId] || null,
       min: r.min,
       max: r.max,
       timestamp: r.createdAt.getTime(),
