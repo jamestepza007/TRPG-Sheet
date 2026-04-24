@@ -396,6 +396,27 @@ export default function CharacterPage() {
           </div>
         </div>
 
+        {/* ── Tabs ── */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: `2px solid ${acc}33` }}>
+          {[['sheet','⚔ Character Sheet'], ['notes','📝 Notes']].map(([key, label]) => (
+            <button key={key} onClick={() => setActiveTab(key)}
+              style={{ background: 'transparent', border: 'none', borderBottom: activeTab === key ? `2px solid ${acc}` : '2px solid transparent', marginBottom: -2, color: activeTab === key ? acc : '#555', fontFamily: 'Cinzel, serif', fontSize: 12, padding: '8px 20px', cursor: 'pointer', letterSpacing: '0.08em' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Notes Page */}
+        {activeTab === 'notes' && (
+          <div className="card" style={{ minHeight: '70vh' }}>
+            <textarea value={sheet.notes || ''} onChange={e => update('notes', e.target.value)}
+              placeholder="Notes..."
+              style={{ width: '100%', height: '70vh', resize: 'vertical' }} />
+          </div>
+        )}
+
+        {/* Character Sheet */}
+        {activeTab === 'sheet' && (<>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
           {/* LEFT */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -479,6 +500,35 @@ export default function CharacterPage() {
           {/* RIGHT sticky */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Party mini panel */}
+              {partyData && (
+                <div className="card">
+                  <div className="section-title" style={{ color: acc, marginBottom: 10 }}>⚔ {partyData.campaign?.name || 'Party'}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {partyData.members?.map(m => {
+                      const sd = m.character?.sheetData || {};
+                      const isMe = m.character?.id === id;
+                      const pct = sd.maxHP ? Math.max(0, Math.min(100, (sd.currentHP / sd.maxHP) * 100)) : null;
+                      return (
+                        <div key={m.id} style={{ background: isMe ? `rgba(201,168,76,0.08)` : 'rgba(0,0,0,0.3)', border: `1px solid ${isMe ? acc+'44' : '#2a2a2a'}`, borderRadius: 6, padding: '6px 10px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: pct !== null ? 4 : 0 }}>
+                            <span style={{ fontFamily: 'Cinzel, serif', fontSize: 11, color: isMe ? acc : '#aaa' }}>{m.character?.name}{isMe ? ' ★' : ''}</span>
+                            <span style={{ fontSize: 9, color: '#555' }}>{m.user?.username}</span>
+                          </div>
+                          {pct !== null && (
+                            <div>
+                              <div style={{ background: '#1a1a1a', borderRadius: 3, height: 4, overflow: 'hidden' }}>
+                                <div style={{ height: '100%', background: pct <= 25 ? '#f87171' : pct <= 50 ? '#facc15' : '#4ade80', width: pct + '%', transition: 'width 0.3s' }} />
+                              </div>
+                              <div style={{ fontSize: 9, color: '#555', marginTop: 2 }}>{sd.currentHP}/{sd.maxHP} HP</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <DiceRoller system={character.system} stats={sheet} getModifier={system.getModifier}
                 externalExpr={diceExpr} rollTrigger={rollTrigger} characterName={character.name} />
               <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 14 }}>
@@ -502,8 +552,9 @@ export default function CharacterPage() {
             </div>
           </div>
         </div>
+        </>)}
       </div>
-          <FontSizeControl dark={true} />
+      <FontSizeControl dark={true} />
     </div>
   );
 }

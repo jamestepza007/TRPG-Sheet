@@ -44,7 +44,7 @@ router.get('/mine', async (req, res) => {
     include: {
       party: {
         include: {
-          campaign: { include: { gm: { select: { username: true } } } },
+          campaign: { select: { id: true, name: true, system: true, gmId: true, inviteCode: true, gm: { select: { username: true } } } },
           members: { include: { user: { select: { id: true, username: true } }, character: true } }
         }
       },

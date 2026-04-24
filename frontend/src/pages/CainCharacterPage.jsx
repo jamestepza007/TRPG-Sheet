@@ -358,8 +358,26 @@ export default function CainCharacterPage() {
         </div>
       </div>
 
+      {/* ── Tabs ── */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 12, borderBottom: `2px solid ${C.borderDark}` }}>
+        {[['sheet','◈ CHARACTER SHEET'], ['notes','◈ NOTES']].map(([key, label]) => (
+          <button key={key} onClick={() => setActiveTab(key)}
+            style={{ background: 'transparent', border: 'none', borderBottom: activeTab === key ? `2px solid ${C.dark}` : '2px solid transparent', marginBottom: -2, color: activeTab === key ? C.dark : C.muted, fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, padding: '6px 16px', cursor: 'pointer', letterSpacing: '0.12em' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'notes' && (
+        <div style={{ background: C.bg, border: `1px solid ${C.borderDark}`, padding: 20, minHeight: '70vh' }}>
+          <textarea value={sheet.notes || ''} onChange={e => update('notes', e.target.value)}
+            placeholder="Notes..."
+            style={{ width: '100%', height: '70vh', resize: 'vertical', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 6 }} />
+        </div>
+      )}
+
       {/* Main document */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', background: C.bg, border: `1px solid ${C.borderDark}`, boxShadow: '4px 4px 0 rgba(0,0,0,0.2)', padding: 20, fontFamily: C.font, color: C.dark }}>
+      {activeTab === 'sheet' && (<div style={{ maxWidth: 1200, margin: '0 auto', background: C.bg, border: `1px solid ${C.borderDark}`, boxShadow: '4px 4px 0 rgba(0,0,0,0.2)', padding: 20, fontFamily: C.font, color: C.dark }}>
 
         {/* Header stamp */}
         <div style={{ textAlign: 'center', borderBottom: `3px solid ${C.dark}`, paddingBottom: 8, marginBottom: 16 }}>
@@ -663,12 +681,12 @@ export default function CainCharacterPage() {
         </div> {/* end 2-col grid */}
 
                 {/* Footer stamp */}
-      </div>)}
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: C.font, fontSize: 8, color: C.muted, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
           Report all changes to dormitory supervisor (see code C664) &nbsp;|&nbsp; If you suspect you are cursed, call 994 immediately &nbsp;|&nbsp; As above, so below &nbsp;|&nbsp; CASTLE
         </div>
       </div>
-    <FontSizeControl />
+      )}
+      <FontSizeControl />
     </div>
   );
 }

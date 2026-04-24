@@ -90,9 +90,7 @@ export const SYSTEMS = {
       INTERFACING: 0, INVESTIGATION: 0, SURVEILLANCE: 0,
       NEGOTIATION: 0, AUTHORITY: 0, CONNECTION: 0,
       skillImprovements: 0,
-      // Stress + Execution
-      stress: 0,
-      // Psyche burst
+      // Psyche burst (3 circles)
       psycheBurst: 0,
       // Injuries (5 circles)
       injuries: 0,
@@ -119,14 +117,12 @@ export const SYSTEMS = {
       // Blasphemy
       blasphemyDescription: '',
       blasphemyPassive: '',
-      observedPowers: ['', '', '', '', ''],
+      observedPowers: ['', '', '', ''],
       // Abilities (max 5)
       abilities: ['', '', '', '', ''],
       // XP & Advances
       xp: 0,
       advances: 0,
-      // Pathos
-      pathos: 0,
       // Notes
       notes: '',
     }),

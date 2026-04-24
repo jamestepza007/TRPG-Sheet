@@ -101,6 +101,8 @@ export default function DashboardPage() {
   const [inviteCode, setInviteCode] = useState('');
   const [selectedCharId, setSelectedCharId] = useState('');
   const [newCampaign, setNewCampaign] = useState({ name: '', system: 'DUNGEON_WORLD', description: '' });
+  const [editingCharId, setEditingCharId] = useState(null);
+  const [editingCharName, setEditingCharName] = useState('');
 
   useEffect(() => { fetchAll(); }, []);
 
