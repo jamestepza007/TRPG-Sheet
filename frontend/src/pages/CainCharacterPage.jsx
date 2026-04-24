@@ -264,12 +264,50 @@ export default function CainCharacterPage() {
   const [sheet, setSheet] = useState({});
   const [saveStatus, setSaveStatus] = useState('saved');
   const [cropSrc, setCropSrc] = useState(null);
+  const [partyData, setPartyData] = useState(null);
+  const sseRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('sheet');
   const autoSaveTimer = useRef(null);
   const sheetRef = useRef({});
   const charRef = useRef(null);
   const sys = getSystem('CAIN');
 
-  useEffect(() => { fetchChar(); }, [id]);
+  useEffect(() => {
+    fetchChar();
+    fetchParty();
+    return () => { sseRef.current?.close(); };
+  }, [id]);
+
+  const fetchParty = async () => {
+    try {
+      const res = await api.get('/parties/mine');
+      const myParty = res.data.find(m => m.party?.members?.some(mb => mb.character?.id === id));
+      if (myParty) {
+        setPartyData(myParty.party);
+        // Start SSE for realtime updates
+        if (sseRef.current) sseRef.current.close();
+        const token = localStorage.getItem('token');
+        const baseUrl = import.meta.env.VITE_API_URL || '/api';
+        const es = new EventSource(`${baseUrl}/sse/party/${myParty.party.id}?token=${token}`);
+        sseRef.current = es;
+        es.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.type === 'character_updated') {
+              setPartyData(prev => !prev ? prev : {
+                ...prev,
+                members: prev.members.map(m =>
+                  m.character.id === data.characterId
+                    ? { ...m, character: { ...m.character, sheetData: data.sheetData, name: data.name } }
+                    : m
+                )
+              });
+            }
+          } catch {}
+        };
+      }
+    } catch {}
+  };
 
   const fetchChar = async () => {
     try {
@@ -324,9 +362,10 @@ export default function CainCharacterPage() {
   const resilient = sheet.resilientAgenda || false;
   const visitationRight = sheet.visitationRight || false;   // +1 max injury
   const immaculate = sheet.immaculate || false;             // +1 max injury  
-  const privateRooms = sheet.privateRooms || false;         // +1 max stress (exec)
+  const privateRooms = sheet.privateRooms || false;         // +1 max stress
+  const leaveOfAbsence = sheet.leaveOfAbsence || false;     // +1 max stress (exec)
   const injuryMax = 3 + (visitationRight ? 1 : 0) + (immaculate ? 1 : 0);
-  const execBase = 6 + (privateRooms ? 1 : 0);
+  const execBase = 6 + (privateRooms ? 1 : 0) + (leaveOfAbsence ? 1 : 0);
   const execMax = resilient ? execBase : Math.max(1, execBase - injuries);
 
   const statusColor = { saved: '#2a5a2a', saving: '#5a4a00', dirty: '#888', error: '#8b0000' }[saveStatus];
@@ -356,8 +395,26 @@ export default function CainCharacterPage() {
         </div>
       </div>
 
+      {/* ── Tabs ── */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 12, borderBottom: `2px solid ${C.borderDark}` }}>
+        {[['sheet','◈ CHARACTER SHEET'], ['notes','◈ NOTES']].map(([key, label]) => (
+          <button key={key} onClick={() => setActiveTab(key)}
+            style={{ background: 'transparent', border: 'none', borderBottom: activeTab === key ? `2px solid ${C.dark}` : '2px solid transparent', marginBottom: -2, color: activeTab === key ? C.dark : C.muted, fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, padding: '6px 16px', cursor: 'pointer', letterSpacing: '0.12em' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'notes' && (
+        <div style={{ background: C.bg, border: `1px solid ${C.borderDark}`, padding: 20, minHeight: '70vh' }}>
+          <textarea value={sheet.notes || ''} onChange={e => update('notes', e.target.value)}
+            placeholder="Notes..."
+            style={{ width: '100%', height: '70vh', resize: 'vertical', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 6 }} />
+        </div>
+      )}
+
       {/* Main document */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', background: C.bg, border: `1px solid ${C.borderDark}`, boxShadow: '4px 4px 0 rgba(0,0,0,0.2)', padding: 20, fontFamily: C.font, color: C.dark }}>
+      {activeTab === 'sheet' && (<div style={{ maxWidth: 1200, margin: '0 auto', background: C.bg, border: `1px solid ${C.borderDark}`, boxShadow: '4px 4px 0 rgba(0,0,0,0.2)', padding: 20, fontFamily: C.font, color: C.dark }}>
 
         {/* Header stamp */}
         <div style={{ textAlign: 'center', borderBottom: `3px solid ${C.dark}`, paddingBottom: 8, marginBottom: 16 }}>
@@ -427,7 +484,7 @@ export default function CainCharacterPage() {
             </div>
             <div style={{ marginTop: 6 }}>
               <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid }}>IMPROVEMENTS:</div>
-              <CircleRow count={7} filled={sheet.skillImprovements || 0} onToggle={i => update('skillImprovements', i < (sheet.skillImprovements || 0) ? i : i + 1)} size={14} />
+              <CircleRow count={6} filled={sheet.skillImprovements || 0} onToggle={i => update('skillImprovements', i < (sheet.skillImprovements || 0) ? i : i + 1)} size={14} />
             </div>
           </SectionBox>
         </div>
@@ -453,6 +510,7 @@ export default function CainCharacterPage() {
               { key: 'visitationRight', val: visitationRight, label: 'VISITATION RIGHT', sub: '12S — +1 max injury' },
               { key: 'immaculate', val: immaculate, label: 'IMMACULATE DEFIANCE OF HEAVEN', sub: 'Faith bond — +1 max injury' },
               { key: 'privateRooms', val: privateRooms, label: 'PRIVATE ROOMS', sub: '8S — +1 max stress' },
+              { key: 'leaveOfAbsence', val: leaveOfAbsence, label: 'LEAVE OF ABSENCE', sub: '+1 max stress' },
             ].map(({ key, val, label, sub }) => (
               <div key={key} onClick={() => update(key, !val)}
                 style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, padding: '3px 6px', border: `1px solid ${val ? C.borderDark : C.border}`, background: val ? 'rgba(0,0,0,0.05)' : 'transparent', cursor: 'pointer', userSelect: 'none' }}>
@@ -647,9 +705,59 @@ export default function CainCharacterPage() {
 
         </div> {/* end LEFT COLUMN */}
 
-        {/* ── RIGHT COLUMN: Dice Roller (sticky) ── */}
-        <div style={{ position: 'sticky', top: 12, alignSelf: 'flex-start' }}>
-          <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 10 }}>
+        {/* ── RIGHT COLUMN: Party + Dice Roller (sticky) ── */}
+        <div style={{ position: 'sticky', top: 12, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+          {/* Party Panel */}
+          {partyData && (
+            <div style={{ border: `1px solid ${C.borderDark}`, background: C.bg }}>
+              <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>
+                UNIT — {partyData.campaign?.name || 'PARTY'}
+              </div>
+              <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {partyData.members?.map(m => {
+                  const sd = m.character?.sheetData || {};
+                  const isMe = m.character?.id === id;
+                  const cat = sd.cat || 1;
+                  const inj = sd.injuries || 0;
+                  const eMax = sd.resilientAgenda ? 6 : Math.max(1, 6 - inj);
+                  const str = sd.stress || 0;
+                  return (
+                    <div key={m.id} style={{ border: `1px solid ${isMe ? C.borderDark : C.border}`, background: isMe ? 'rgba(0,0,0,0.05)' : 'transparent', padding: '5px 7px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.dark }}>{m.character?.name}{isMe ? ' ★' : ''}</span>
+                        <span style={{ fontFamily: C.font, fontSize: 8, color: C.muted }}>CAT {['I','II','III','IV','V'][cat-1]}</span>
+                      </div>
+                      <div style={{ marginBottom: 2 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
+                          <span style={{ fontFamily: C.fontSans, fontSize: 7, color: C.muted }}>EXEC</span>
+                          <span style={{ fontFamily: C.font, fontSize: 7, color: str >= eMax ? C.red : C.muted }}>{eMax - str}/{eMax}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 1 }}>
+                          {Array.from({ length: eMax }, (_, i) => (
+                            <div key={i} style={{ flex: 1, height: 5, background: i < str ? C.dark : 'transparent', border: `1px solid ${C.borderDark}` }} />
+                          ))}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontFamily: C.font, fontSize: 7, color: C.muted }}>{m.user?.username}</div>
+                        {(sd.injuries || 0) > 0 && (
+                          <div style={{ display: 'flex', gap: 1 }}>
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', border: `1px solid ${C.red}`, background: i < (sd.injuries || 0) ? C.red : 'transparent' }} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Dice Roller */}
+          <div style={{ border: `1px solid ${C.borderDark}` }}>
             <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>DICE ROLLER</div>
             <div style={{ padding: '10px' }}>
               <CainDiceRoller sheet={sheet} system="CAIN" characterName={character.name} />
@@ -664,7 +772,8 @@ export default function CainCharacterPage() {
           Report all changes to dormitory supervisor (see code C664) &nbsp;|&nbsp; If you suspect you are cursed, call 994 immediately &nbsp;|&nbsp; As above, so below &nbsp;|&nbsp; CASTLE
         </div>
       </div>
-    <FontSizeControl />
+      )}
+      <FontSizeControl />
     </div>
   );
 }

@@ -9,7 +9,7 @@ router.use(authenticate);
 
 // GET /api/campaigns
 router.get('/', async (req, res) => {
-  const where = req.user.role === 'ADMIN' ? {} : { gmId: req.user.id };
+  const where = { gmId: req.user.id }; // each user sees only their own campaigns
   const campaigns = await prisma.campaign.findMany({
     where,
     include: { party: { include: { members: { include: { user: { select: { id: true, username: true } }, character: true } } } } }
@@ -42,13 +42,18 @@ router.post('/', requireRole('GM', 'ADMIN'), async (req, res) => {
 
 // PUT /api/campaigns/:id - update name/description/coverImage
 router.put('/:id', requireRole('GM', 'ADMIN'), async (req, res) => {
-  const { name, description, coverImage } = req.body;
+  const { name, description, coverImage, gmSheetData } = req.body;
   const campaign = await prisma.campaign.findUnique({ where: { id: req.params.id } });
   if (!campaign || (campaign.gmId !== req.user.id && req.user.role !== 'ADMIN'))
     return res.status(403).json({ error: 'Forbidden' });
   const updated = await prisma.campaign.update({
     where: { id: req.params.id },
-    data: { name, description, ...(coverImage !== undefined && { coverImage }) }
+    data: {
+      ...(name !== undefined && { name }),
+      ...(description !== undefined && { description }),
+      ...(coverImage !== undefined && { coverImage }),
+      ...(gmSheetData !== undefined && { gmSheetData }),
+    }
   });
   res.json(updated);
 });

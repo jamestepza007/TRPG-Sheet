@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api.js';
 import { getSystem } from '../utils/systems.js';
 import DiceRoller from '../components/DiceRoller.jsx';
 import toast from 'react-hot-toast';
+import { handleBgmSync } from '../components/AudioSettings.jsx';
 
 function VitalMini({ label, current, max, color }) {
   const pct = Math.max(0, Math.min(100, ((current || 0) / (max || 1)) * 100));
@@ -26,27 +27,63 @@ function VitalMini({ label, current, max, color }) {
 export default function CampaignPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [bgmUrl, setBgmUrl] = useState('');
+  const [bgmQueue, setBgmQueue] = useState([]);
+  const [bgmPlaying, setBgmPlaying] = useState(null);
   const [campaign, setCampaign] = useState(null);
   const [system, setSystem] = useState(null);
+  const [connected, setConnected] = useState(false);
+  const sseRef = useRef(null);
 
   useEffect(() => {
     if (id === 'new') return;
     fetchCampaign();
-  }, [id]);
-
-  // Auto-refresh every 30s for near-realtime vitals
-  useEffect(() => {
-    if (!id || id === 'new') return;
-    const interval = setInterval(fetchCampaign, 30000);
-    return () => clearInterval(interval);
+    return () => { sseRef.current?.close(); };
   }, [id]);
 
   const fetchCampaign = async () => {
     try {
       const res = await api.get(`/campaigns/${id}`);
+      // Route CAIN campaigns to GM sheet
+      if (res.data.system === 'CAIN') {
+        navigate(`/campaigns/cain/${id}`, { replace: true });
+        return;
+      }
       setCampaign(res.data);
       setSystem(getSystem(res.data.system));
+      if (res.data.party?.id) startSSE(res.data.party.id);
     } catch { toast.error('Campaign not found'); navigate('/'); }
+  };
+
+  const startSSE = (partyId) => {
+    if (sseRef.current) sseRef.current.close();
+    const token = localStorage.getItem('token');
+    const baseUrl = import.meta.env.VITE_API_URL || '/api';
+    const es = new EventSource(`${baseUrl}/sse/party/${partyId}?token=${token}`);
+    sseRef.current = es;
+    es.onopen = () => setConnected(true);
+    es.onerror = () => { setConnected(false); setTimeout(() => startSSE(partyId), 5000); };
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'character_updated') {
+          setCampaign(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              party: {
+                ...prev.party,
+                members: prev.party.members.map(m =>
+                  m.character.id === data.characterId
+                    ? { ...m, character: { ...m.character, sheetData: data.sheetData, name: data.name } }
+                    : m
+                )
+              }
+            };
+          });
+        }
+      } catch {}
+    };
   };
 
   const kickPlayer = async (userId) => {
@@ -78,7 +115,13 @@ export default function CampaignPage() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, paddingBottom: 18, borderBottom: `1px solid ${acc}33` }}>
           <div>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: 26, color: acc }}>{campaign.name}</div>
-            <div style={{ color: '#555', fontSize: 13 }}>{system.name} · {members.length} Players</div>
+            <div style={{ color: '#555', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+              {system.name} · {members.length} Players
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: connected ? '#4ade80' : '#f87171', display: 'inline-block', boxShadow: connected ? '0 0 6px #4ade80' : 'none' }} />
+                <span style={{ color: connected ? '#4ade80' : '#f87171' }}>{connected ? 'Live' : 'Offline'}</span>
+              </span>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn-ghost btn-sm" onClick={() => navigate('/')}>← Back</button>
@@ -95,10 +138,89 @@ export default function CampaignPage() {
             </code>
             <button className="btn-ghost btn-sm" onClick={() => { navigator.clipboard.writeText(campaign.inviteCode); toast.success('Copied!'); }}>Copy</button>
           </div>
-          <p style={{ color: '#444', fontSize: 12, marginTop: 8, fontFamily: 'Cinzel, serif' }}>Share with players to join · Auto-refreshes every 30s</p>
+          <p style={{ color: '#444', fontSize: 12, marginTop: 8, fontFamily: 'Cinzel, serif' }}>Share with players to join · Updates are live</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
+          {/* BGM Sync */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div className="section-title" style={{ color: acc, margin: 0 }}>🎵 BGM Sync</div>
+              <span style={{ fontSize: 10, color: '#555' }}>Syncs to all players in party</span>
+            </div>
+
+            {/* Add to queue */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <input value={bgmUrl} onChange={e => setBgmUrl(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && (() => {
+                  if (!bgmUrl.trim()) return;
+                  const match = bgmUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                  const ytId = match ? match[1] : bgmUrl.trim();
+                  if (ytId) { setBgmQueue(q => [...q, { id: ytId, url: bgmUrl }]); setBgmUrl(''); }
+                })()}
+                placeholder="Paste YouTube URL..."
+                style={{ flex: 1, fontFamily: 'Share Tech Mono, monospace', fontSize: 12 }} />
+              <button onClick={() => {
+                if (!bgmUrl.trim()) return;
+                const match = bgmUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                const ytId = match ? match[1] : bgmUrl.trim();
+                if (ytId.length !== 11) return toast.error('Invalid YouTube URL');
+                setBgmQueue(q => [...q, { id: ytId, url: bgmUrl }]);
+                setBgmUrl('');
+              }} className="btn-ghost btn-sm">+ Add</button>
+              <button onClick={() => {
+                if (!bgmUrl.trim()) return;
+                const match = bgmUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                const ytId = match ? match[1] : bgmUrl.trim();
+                if (!ytId || ytId.length !== 11) return toast.error('Invalid YouTube URL');
+                if (campaign?.party?.id) {
+                  api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: ytId, enabled: true });
+                  handleBgmSync({ enabled: true, trackId: ytId }); // GM also hears it
+                  setBgmPlaying(ytId);
+                  toast.success('▶ Playing for all players');
+                }
+              }} className="btn-primary btn-sm">▶ Play Now</button>
+            </div>
+
+            {/* Queue */}
+            {bgmQueue.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+                {bgmQueue.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: bgmPlaying === item.id ? `${acc}18` : 'rgba(0,0,0,0.2)', border: `1px solid ${bgmPlaying === item.id ? acc+'44' : '#2a2a2a'}`, borderRadius: 4, padding: '6px 10px' }}>
+                    <button onClick={() => {
+                      if (campaign?.party?.id) {
+                        api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: item.id, enabled: true });
+                        handleBgmSync({ enabled: true, trackId: item.id }); // GM also hears it
+                        setBgmPlaying(item.id);
+                        toast.success('▶ Playing for all players');
+                      }
+                    }} style={{ background: 'transparent', border: 'none', color: bgmPlaying === item.id ? acc : '#888', cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0 }}>
+                      {bgmPlaying === item.id ? '▶' : '○'}
+                    </button>
+                    <span style={{ flex: 1, fontFamily: 'Share Tech Mono, monospace', fontSize: 10, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.url}
+                    </span>
+                    <button onClick={() => setBgmQueue(q => q.filter((_, j) => j !== i))}
+                      style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, padding: 0, flexShrink: 0 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Stop */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 10, color: '#555' }}>Players with BGM Sync enabled will auto-play</span>
+              <button onClick={() => {
+                if (campaign?.party?.id) {
+                  api.post(`/parties/${campaign.party.id}/bgm-sync`, { enabled: false });
+                  handleBgmSync({ enabled: false }); // GM also stops
+                  setBgmPlaying(null);
+                  toast.success('■ BGM stopped');
+                }
+              }} className="btn-ghost btn-sm" style={{ color: '#f87171', borderColor: '#f8717144' }}>■ Stop All</button>
+            </div>
+          </div>
+
           {/* Party members */}
           <div>
             <div className="section-title" style={{ color: acc }}>⚔ Party Members</div>
@@ -112,7 +234,11 @@ export default function CampaignPage() {
                   const sd = member.character.sheetData || {};
                   const mod = system.getModifier;
                   return (
-                    <div key={member.id} style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 18 }}>
+                    <div key={member.id} style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 18, position: 'relative' }}>
+                      <button onClick={() => navigate(member.character.system === 'CAIN' ? `/characters/cain/${member.character.id}` : `/characters/${member.character.id}`)}
+                        style={{ position: 'absolute', top: 10, right: 10, background: 'transparent', border: `1px solid ${acc}44`, color: acc, fontFamily: 'Cinzel, serif', fontSize: 10, padding: '3px 8px', cursor: 'pointer', borderRadius: 4 }}>
+                        View Sheet
+                      </button>
                       {/* Name + kick */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <div>

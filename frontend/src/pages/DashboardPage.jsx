@@ -101,6 +101,8 @@ export default function DashboardPage() {
   const [inviteCode, setInviteCode] = useState('');
   const [selectedCharId, setSelectedCharId] = useState('');
   const [newCampaign, setNewCampaign] = useState({ name: '', system: 'DUNGEON_WORLD', description: '' });
+  const [editingCharId, setEditingCharId] = useState(null);
+  const [editingCharName, setEditingCharName] = useState('');
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -118,16 +120,37 @@ export default function DashboardPage() {
 
   const closeModal = () => setModal(null);
 
+  const renameChar = async (charId, newName) => {
+    if (!newName.trim()) return;
+    try {
+      await api.put(`/characters/${charId}`, { name: newName.trim() });
+      setCharacters(prev => prev.map(c => c.id === charId ? { ...c, name: newName.trim() } : c));
+      toast.success('Renamed!');
+    } catch { toast.error('Failed to rename'); }
+    setEditingCharId(null);
+  };
+
   const createCharacter = async (e) => {
     e.preventDefault();
     try {
       const sys = systemList.find(s => s.id === newChar.system);
-      const defaultData = { level: 1, xp: 0, maxHP: 10, currentHP: 10, maxStamina: 10, currentStamina: 10, maxMana: 10, currentMana: 10, armor: 0, class: '', race: '', moves: '', gear: '', bonds: '', notes: '', portrait: '' };
-      sys?.stats.forEach(s => { defaultData[s.key] = 10; });
+      // Use system's own default sheet if available, otherwise DW defaults
+      let defaultData;
+      if (sys?.getDefaultSheet) {
+        defaultData = sys.getDefaultSheet();
+      } else {
+        defaultData = { level: 1, xp: 0, maxHP: 10, currentHP: 10, maxStamina: 10, currentStamina: 10, maxMana: 10, currentMana: 10, armor: 0, class: '', race: '', moves: '', gear: '', bonds: '', notes: '', portrait: '' };
+        sys?.stats.forEach(s => { defaultData[s.key] = 10; });
+      }
       const res = await api.post('/characters', { ...newChar, sheetData: defaultData });
       toast.success('Character created!');
       closeModal();
-      navigate(`/characters/${res.data.id}`);
+      // Route to correct page based on system
+      if (newChar.system === 'CAIN') {
+        navigate(`/characters/cain/${res.data.id}`);
+      } else {
+        navigate(`/characters/${res.data.id}`);
+      }
     } catch { toast.error('Failed to create character'); }
   };
 
@@ -194,7 +217,7 @@ export default function DashboardPage() {
         ) : (
           <div className="grid-3">
             {characters.map(char => (
-              <div key={char.id} onClick={() => navigate(`/characters/${char.id}`)}
+              <div key={char.id} onClick={() => { if (editingCharId === char.id) return; navigate(char.system === 'CAIN' ? `/characters/cain/${char.id}` : `/characters/${char.id}`); }}
                 style={{ background: '#161616', border: '1px solid #3d2510', borderRadius: 8, overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.2s, box-shadow 0.2s', position: 'relative', minHeight: 200 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = acc; e.currentTarget.style.boxShadow = `0 0 24px rgba(201,168,76,0.12)`; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#3d2510'; e.currentTarget.style.boxShadow = 'none'; }}>
@@ -210,11 +233,26 @@ export default function DashboardPage() {
                 </div>
 
                 {/* DW badge top-right */}
-                <span className="badge badge-fantasy" style={{ position: 'absolute', top: 8, right: 8, fontSize: 9, zIndex: 2 }}>DW</span>
+                <span className="badge badge-fantasy" style={{ position: 'absolute', top: 8, right: 8, fontSize: 9, zIndex: 2 }}>{char.system === 'CAIN' ? 'CAIN' : 'DW'}</span>
 
                 {/* Info overlaid at bottom */}
                 <div style={{ position: 'relative', zIndex: 1, padding: '100px 14px 14px' }}>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: 17, color: acc, marginBottom: 2, textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{char.name}</div>
+                  {editingCharId === char.id ? (
+                    <input
+                      autoFocus
+                      value={editingCharName}
+                      onChange={e => setEditingCharName(e.target.value)}
+                      onBlur={() => renameChar(char.id, editingCharName)}
+                      onKeyDown={e => { if (e.key === 'Enter') renameChar(char.id, editingCharName); if (e.key === 'Escape') setEditingCharId(null); }}
+                      onClick={e => e.stopPropagation()}
+                      style={{ fontFamily: 'Cinzel, serif', fontSize: 15, color: acc, background: 'rgba(0,0,0,0.6)', border: `1px solid ${acc}`, borderRadius: 4, padding: '2px 6px', width: '100%', marginBottom: 2 }}
+                    />
+                  ) : (
+                    <div
+                      onDoubleClick={e => { e.stopPropagation(); setEditingCharId(char.id); setEditingCharName(char.name); }}
+                      title="Double-click to rename"
+                      style={{ fontFamily: 'Cinzel, serif', fontSize: 17, color: acc, marginBottom: 2, textShadow: '0 2px 8px rgba(0,0,0,0.8)', cursor: 'text' }}>{char.name} <span style={{ fontSize: 9, opacity: 0.4 }}>✎</span></div>
+                  )}
                   <div style={{ color: '#888', fontSize: 12, textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>{char.sheetData?.class || '—'} · Lv.{char.sheetData?.level || 1}</div>
                   {char.sheetData?.currentHP !== undefined && (
                     <div style={{ marginTop: 10 }}>

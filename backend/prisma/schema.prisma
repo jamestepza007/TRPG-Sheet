@@ -91,6 +91,9 @@ model DiceLog {
   expression    String
   result        Int
   details       Json
+  characterName String?
+  min           Int?
+  max           Int?
   sentToDiscord Boolean    @default(false)
   createdAt     DateTime   @default(now())
 }
@@ -100,5 +103,13 @@ model GlobalWebhook {
   label     String
   url       String
   createdBy String
+  createdAt DateTime @default(now())
+}
+
+model BgmTrack {
+  id        String   @id @default(cuid())
+  label     String
+  youtubeId String
+  order     Int      @default(0)
   createdAt DateTime @default(now())
 }

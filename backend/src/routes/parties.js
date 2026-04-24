@@ -1,4 +1,5 @@
 import express from 'express';
+import { pushPartyUpdate } from '../sse.js';
 import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
 
@@ -43,7 +44,7 @@ router.get('/mine', async (req, res) => {
     include: {
       party: {
         include: {
-          campaign: { include: { gm: { select: { username: true } } } },
+          campaign: { select: { id: true, name: true, system: true, gmId: true, inviteCode: true, gm: { select: { username: true } } } },
           members: { include: { user: { select: { id: true, username: true } }, character: true } }
         }
       },
@@ -64,6 +65,34 @@ router.delete('/:partyId/members/:userId', async (req, res) => {
     where: { partyId: req.params.partyId, userId: req.params.userId }
   });
   res.json({ success: true });
+});
+
+
+// PUT /api/parties/:id/inventory
+router.put('/:id/inventory', async (req, res) => {
+  const { inventory } = req.body;
+  try {
+    const party = await prisma.party.update({
+      where: { id: req.params.id },
+      data: { inventory: inventory || '' }
+    });
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// POST /api/parties/:id/bgm-sync — GM pushes BGM to all players
+router.post('/:id/bgm-sync', async (req, res) => {
+  const { trackId, trackLabel, enabled } = req.body;
+  try {
+    pushPartyUpdate(req.params.id, {
+      type: 'bgm_sync',
+      trackId,
+      trackLabel,
+      enabled,
+      gmId: req.user.id,
+    });
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
 export default router;

@@ -257,11 +257,52 @@ export default function CharacterPage() {
   const [diceExpr, setDiceExpr] = useState('2d6');
   const [rollTrigger, setRollTrigger] = useState(0);
   const [cropSrc, setCropSrc] = useState(null); // portrait crop modal
+  const [partyData, setPartyData] = useState(null);
+  const sseRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'notes'
   const autoSaveTimer = useRef(null);
   const sheetRef = useRef({});
   const charRef = useRef(null);
 
-  useEffect(() => { fetchChar(); }, [id]);
+  useEffect(() => {
+    fetchChar();
+    fetchParty();
+    return () => { sseRef.current?.close(); };
+  }, [id]);
+
+  const fetchParty = async () => {
+    try {
+      const res = await api.get('/parties/mine');
+      const myParty = res.data.find(m => m.party?.members?.some(mb => mb.character?.id === id));
+      if (myParty) {
+        setPartyData(myParty.party);
+        startSSE(myParty.party.id);
+      }
+    } catch {}
+  };
+
+  const startSSE = (partyId) => {
+    if (sseRef.current) sseRef.current.close();
+    const token = localStorage.getItem('token');
+    const baseUrl = import.meta.env.VITE_API_URL || '/api';
+    const es = new EventSource(`${baseUrl}/sse/party/${partyId}?token=${token}`);
+    sseRef.current = es;
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'character_updated') {
+          setPartyData(prev => !prev ? prev : {
+            ...prev,
+            members: prev.members.map(m =>
+              m.character.id === data.characterId
+                ? { ...m, character: { ...m.character, sheetData: data.sheetData, name: data.name } }
+                : m
+            )
+          });
+        }
+      } catch {}
+    };
+  };
 
   const fetchChar = async () => {
     try {
@@ -386,6 +427,27 @@ export default function CharacterPage() {
           </div>
         </div>
 
+        {/* ── Tabs ── */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: `2px solid ${acc}33` }}>
+          {[['sheet','⚔ Character Sheet'], ['notes','📝 Notes']].map(([key, label]) => (
+            <button key={key} onClick={() => setActiveTab(key)}
+              style={{ background: 'transparent', border: 'none', borderBottom: activeTab === key ? `2px solid ${acc}` : '2px solid transparent', marginBottom: -2, color: activeTab === key ? acc : '#555', fontFamily: 'Cinzel, serif', fontSize: 12, padding: '8px 20px', cursor: 'pointer', letterSpacing: '0.08em' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Notes Page */}
+        {activeTab === 'notes' && (
+          <div className="card" style={{ minHeight: '70vh' }}>
+            <textarea value={sheet.notes || ''} onChange={e => update('notes', e.target.value)}
+              placeholder="Notes..."
+              style={{ width: '100%', height: '70vh', resize: 'vertical' }} />
+          </div>
+        )}
+
+        {/* Character Sheet */}
+        {activeTab === 'sheet' && (<>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
           {/* LEFT */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -469,31 +531,74 @@ export default function CharacterPage() {
           {/* RIGHT sticky */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Party mini panel */}
+              {partyData && (
+                <div className="card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <div className="section-title" style={{ color: acc, margin: 0 }}>⚔ {partyData.campaign?.name || 'Party'}</div>
+                    <span style={{ fontSize: 9, color: '#555' }}>{partyData.members?.length} members</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {partyData.members?.map(m => {
+                      const sd = m.character?.sheetData || {};
+                      const isMe = m.character?.id === id;
+                      const hp = sd.maxHP ? Math.max(0, Math.min(100, (sd.currentHP / sd.maxHP) * 100)) : null;
+                      const st = sd.maxStamina ? Math.max(0, Math.min(100, (sd.currentStamina / sd.maxStamina) * 100)) : null;
+                      const mn = sd.maxMana ? Math.max(0, Math.min(100, (sd.currentMana / sd.maxMana) * 100)) : null;
+                      return (
+                        <div key={m.id} style={{ background: isMe ? `rgba(201,168,76,0.08)` : 'rgba(0,0,0,0.3)', border: `1px solid ${isMe ? acc+'44' : '#2a2a2a'}`, borderRadius: 6, padding: '8px 10px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <div>
+                              <span style={{ fontFamily: 'Cinzel, serif', fontSize: 12, color: isMe ? acc : '#ccc' }}>{m.character?.name}</span>
+                              {isMe && <span style={{ fontSize: 9, color: acc, marginLeft: 4 }}>★ you</span>}
+                              <div style={{ fontSize: 9, color: '#555', marginTop: 1 }}>{sd.class || '—'} · Lv.{sd.level || 1}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: 9, color: '#555' }}>{m.user?.username}</div>
+                              <div style={{ fontSize: 9, color: '#4a7a4a', marginTop: 1 }}>ARM {sd.armor ?? 0}</div>
+                              {(sd.injuries || 0) > 0 && (
+                                <div style={{ display: 'flex', gap: 2, marginTop: 2 }}>
+                                  {Array.from({ length: 5 }, (_, i) => (
+                                    <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', border: '1px solid #f87171', background: i < (sd.injuries || 0) ? '#f87171' : 'transparent' }} />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {hp !== null && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              {[
+                                { label: 'HP', pct: hp, cur: sd.currentHP, max: sd.maxHP, color: '#4ade80' },
+                                ...(st !== null ? [{ label: 'ST', pct: st, cur: sd.currentStamina, max: sd.maxStamina, color: '#fb923c' }] : []),
+                                ...(mn !== null ? [{ label: 'MP', pct: mn, cur: sd.currentMana, max: sd.maxMana, color: '#a78bfa' }] : []),
+                              ].map(bar => (
+                                <div key={bar.label}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                                    <span style={{ fontSize: 8, color: '#555' }}>{bar.label}</span>
+                                    <span style={{ fontSize: 8, color: bar.pct <= 25 ? '#f87171' : '#555', fontFamily: 'Share Tech Mono, monospace' }}>{bar.cur}/{bar.max}</span>
+                                  </div>
+                                  <div style={{ background: '#1a1a1a', borderRadius: 2, height: 4, overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', background: bar.pct <= 25 ? '#f87171' : bar.pct <= 50 ? '#facc15' : bar.color, width: bar.pct + '%', transition: 'width 0.3s' }} />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <DiceRoller system={character.system} stats={sheet} getModifier={system.getModifier}
                 externalExpr={diceExpr} rollTrigger={rollTrigger} characterName={character.name} />
-              <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 14 }}>
-                <div className="section-title" style={{ color: acc }}>📖 Roll Results</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: 13, lineHeight: 2 }}>
-                  <div style={{ color: '#4ade80' }}>10+ · Strong Hit</div>
-                  <div style={{ color: '#facc15' }}>7–9 · Partial Hit</div>
-                  <div style={{ color: '#f87171' }}>6– · Miss</div>
-                </div>
-              </div>
-              <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 14 }}>
-                <div className="section-title" style={{ color: acc }}>📊 Modifiers</div>
-                <div style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: 11, lineHeight: 1.85 }}>
-                  {[['1–3','-3','#f87171'],['4–5','-2','#f87171'],['6–8','-1','#f87171'],['9–12','0','#888'],['13–15','+1','#4ade80'],['16–17','+2','#4ade80'],['18–19','+3','#4ade80'],['20–21','+4','#4ade80'],['22–23','+5','#4ade80'],['24–25','+6','#4ade80'],['26–27','+7','#ffd700'],['28–29','+8','#ffd700'],['30','+9','#ffd700']].map(([r,m,c]) => (
-                    <div key={r} style={{ display: 'flex', justifyContent: 'space-between', color: '#555' }}>
-                      <span>{r}</span><span style={{ color: c }}>{m}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
             </div>
           </div>
         </div>
+        </>)}
       </div>
-          <FontSizeControl dark={true} />
+      <FontSizeControl dark={true} />
     </div>
   );
 }

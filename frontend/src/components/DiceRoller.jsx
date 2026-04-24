@@ -138,7 +138,7 @@ function playLegendarySound(vol = 1.0) {
     const now = ctx.currentTime;
     // Master gain — all sound routes through here
     const master = ctx.createGain();
-    master.gain.setValueAtTime(vol, now);
+    master.gain.value = vol; // direct assignment works more reliably
     master.connect(ctx.destination);
 
     [98, 130.81, 164.81, 196, 261.63, 329.63, 392].forEach((f, i) => {
@@ -184,7 +184,7 @@ function playCatastrophicSound(vol = 1.0) {
     const now = ctx.currentTime;
     // Master gain
     const master = ctx.createGain();
-    master.gain.setValueAtTime(vol, now);
+    master.gain.value = vol;
     master.connect(ctx.destination);
 
     // Heavy thud first — punch on impact
@@ -671,10 +671,9 @@ export default function DiceRoller({ system, campaignId, getModifier, stats, ext
               max: critical.max,
             });
             setCritical(prev => prev ? { ...prev, revealed: true } : null);
-            const vol = getAudioSettings().criticalSoundVol ?? 1.0;
-            if (vol > 0) {
-              if (critical.type === 'max') setTimeout(() => playLegendarySound(vol), 50);
-              else setTimeout(() => playCatastrophicSound(vol), 50);
+            if (getAudioSettings().criticalSound !== false) {
+              if (critical.type === 'max') setTimeout(() => playLegendarySound(1.0), 50);
+              else setTimeout(() => playCatastrophicSound(1.0), 50);
             }
           }}
         />

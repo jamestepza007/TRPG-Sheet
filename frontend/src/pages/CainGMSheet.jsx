@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api.js';
 import toast from 'react-hot-toast';
+import { handleBgmSync } from '../components/AudioSettings.jsx';
 import FontSizeControl from '../components/FontSizeControl.jsx';
 
 const C = {
@@ -76,6 +77,9 @@ export default function CainGMSheet() {
   const { id } = useParams(); // campaign id
   const navigate = useNavigate();
   const [campaign, setCampaign] = useState(null);
+  const [bgmUrl, setBgmUrl] = useState('');
+  const [bgmQueue, setBgmQueue] = useState([]);
+  const [bgmPlaying, setBgmPlaying] = useState(null);
   const [gmData, setGmData] = useState({ sins: [defaultSin()], mission: defaultMission(), notes: '' });
   const [saveStatus, setSaveStatus] = useState('saved');
   const [activeTab, setActiveTab] = useState(0); // which sin is active
@@ -197,6 +201,89 @@ export default function CainGMSheet() {
           </div>
           <div style={{ padding: '0 12px 8px', fontFamily: C.font, fontSize: 8, color: C.muted }}>
             Share with players to join · Updates are live
+          </div>
+        </div>
+
+        {/* ── Party Members ── */}
+        {campaign.party?.members?.length > 0 && (
+          <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 16 }}>
+            <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>
+              ◈ EXORCIST ROSTER — {campaign.party.members.length} ACTIVE
+            </div>
+            <div style={{ padding: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+              {campaign.party.members.map(m => {
+                const sd = m.character?.sheetData || {};
+                const cat = sd.cat || 1;
+                const inj = sd.injuries || 0;
+                const eMax = sd.resilientAgenda ? 6 : Math.max(1, 6 - inj);
+                const str = sd.stress || 0;
+                return (
+                  <div key={m.id} style={{ border: `1px solid ${C.border}`, padding: '6px 8px', background: C.bg }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontFamily: C.fontSans, fontSize: 10, fontWeight: 700, color: C.dark }}>{m.character?.name}</span>
+                      <span style={{ fontFamily: C.font, fontSize: 8, color: C.muted }}>CAT {['I','II','III','IV','V'][cat-1]}</span>
+                    </div>
+                    <div style={{ marginBottom: 3 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
+                        <span style={{ fontFamily: C.fontSans, fontSize: 7, color: C.muted }}>EXECUTION</span>
+                        <span style={{ fontFamily: C.font, fontSize: 7, color: str >= eMax ? C.red : C.muted }}>{eMax - str}/{eMax}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 1 }}>
+                        {Array.from({ length: eMax }, (_, i) => (
+                          <div key={i} style={{ flex: 1, height: 5, background: i < str ? C.dark : 'transparent', border: `1px solid ${C.borderDark}` }} />
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontFamily: C.font, fontSize: 7, color: C.muted }}>{m.user?.username}</span>
+                      <button onClick={() => navigate(m.character?.system === 'CAIN' ? `/characters/cain/${m.character.id}` : `/characters/${m.character.id}`)}
+                        style={{ background: 'transparent', border: `1px solid ${C.border}`, fontFamily: C.fontSans, fontSize: 7, padding: '1px 6px', cursor: 'pointer', color: C.mid }}>VIEW</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── BGM Sync ── */}
+        <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 16 }}>
+          <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>
+            ♫ BGM SYNC — FIELD AUDIO CONTROL
+          </div>
+          <div style={{ padding: 10 }}>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+              <input value={bgmUrl} onChange={e => setBgmUrl(e.target.value)}
+                placeholder="YouTube URL..."
+                style={{ flex: 1, background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: '3px 6px', color: C.dark }} />
+              <button onClick={() => {
+                const match = bgmUrl.match(/[?&]v=([a-zA-Z0-9_-]{11})|youtu\.be\/([a-zA-Z0-9_-]{11})/);
+                const ytId = match ? (match[1] || match[2]) : (bgmUrl.length === 11 ? bgmUrl : null);
+                if (!ytId) return toast.error('Invalid URL');
+                setBgmQueue(q => [...q, { id: ytId, url: bgmUrl }]); setBgmUrl('');
+              }} style={{ background: 'transparent', border: `1px solid ${C.border}`, fontFamily: C.fontSans, fontSize: 8, padding: '3px 8px', cursor: 'pointer', color: C.mid }}>+ ADD</button>
+              <button onClick={() => {
+                const match = bgmUrl.match(/[?&]v=([a-zA-Z0-9_-]{11})|youtu\.be\/([a-zA-Z0-9_-]{11})/);
+                const ytId = match ? (match[1] || match[2]) : (bgmUrl.length === 11 ? bgmUrl : null);
+                if (!ytId) return toast.error('Invalid URL');
+                if (campaign?.party?.id) { api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: ytId, enabled: true }); handleBgmSync({ enabled: true, trackId: ytId }); setBgmPlaying(ytId); toast.success('▶ Playing'); }
+              }} style={{ background: C.dark, border: 'none', color: '#f2ede3', fontFamily: C.fontSans, fontSize: 8, padding: '3px 10px', cursor: 'pointer' }}>▶ PLAY</button>
+              <button onClick={() => {
+                if (campaign?.party?.id) { api.post(`/parties/${campaign.party.id}/bgm-sync`, { enabled: false }); handleBgmSync({ enabled: false }); setBgmPlaying(null); }
+              }} style={{ background: 'transparent', border: `1px solid ${C.red}`, color: C.red, fontFamily: C.fontSans, fontSize: 8, padding: '3px 8px', cursor: 'pointer' }}>■ STOP</button>
+            </div>
+            {bgmQueue.map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: bgmPlaying === item.id ? 'rgba(0,0,0,0.06)' : 'transparent', border: `1px solid ${bgmPlaying === item.id ? C.borderDark : C.border}`, marginBottom: 4 }}>
+                <button onClick={() => {
+                  if (campaign?.party?.id) { api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: item.id, enabled: true }); handleBgmSync({ enabled: true, trackId: item.id }); setBgmPlaying(item.id); }
+                }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: C.font, fontSize: 12, color: bgmPlaying === item.id ? C.dark : C.muted, padding: 0 }}>
+                  {bgmPlaying === item.id ? '▶' : '○'}
+                </button>
+                <span style={{ flex: 1, fontFamily: C.font, fontSize: 8, color: C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.url}</span>
+                <button onClick={() => setBgmQueue(q => q.filter((_,j) => j !== i))}
+                  style={{ background: 'transparent', border: 'none', color: C.red, cursor: 'pointer', fontSize: 10, padding: 0 }}>✕</button>
+              </div>
+            ))}
           </div>
         </div>
 
