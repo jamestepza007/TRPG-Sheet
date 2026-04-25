@@ -15,7 +15,9 @@ import CainCharacterPage from './pages/CainCharacterPage.jsx';
 import CainGMSheet from './pages/CainGMSheet.jsx';
 
 function ProtectedRoute({ children, roles }) {
-  const { isAuthenticated, user, isLoading } = useAuthStore();
+  const { user, loading } = useAuthStore();
+  const isAuthenticated = !!user;
+  const isLoading = loading;
   if (isLoading) return <div style={{ textAlign: 'center', paddingTop: 80, color: '#555' }}>Loading…</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user?.role)) return <Navigate to="/" replace />;
