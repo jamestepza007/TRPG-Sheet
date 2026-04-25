@@ -15,26 +15,53 @@ import CainCharacterPage from './pages/CainCharacterPage.jsx';
 import CainGMSheet from './pages/CainGMSheet.jsx';
 
 function ProtectedRoute({ children, roles }) {
-  const { user, token, loading } = useAuthStore();
-
-  // Still fetching user info — don't redirect yet
-  if (loading) return null;
-
-  if (!token || !user) return <Navigate to="/login" replace />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
+  const { isAuthenticated, user, isLoading } = useAuthStore();
+  if (isLoading) return <div style={{ textAlign: 'center', paddingTop: 80, color: '#555' }}>Loading…</div>;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (roles && !roles.includes(user?.role)) return <Navigate to="/" replace />;
   return children;
 }
 
 export default function App() {
   const { fetchMe, setLoading, token } = useAuthStore();
+  const bgmSseRef = useRef(null);
 
   useEffect(() => {
-    if (token) {
-      fetchMe();
-    } else {
-      setLoading(false);
-    }
+    if (token) { fetchMe(); } else { setLoading(false); }
   }, []);
+
+  // ── Global BGM Sync SSE — listens on every page ──────────────
+  useEffect(() => {
+    if (!token) { bgmSseRef.current?.close(); return; }
+
+    const connect = async () => {
+      try {
+        const { default: api } = await import('./utils/api.js');
+        const res = await api.get('/parties/mine');
+        const parties = res.data;
+        if (!parties?.length) return;
+        const partyId = parties[0]?.party?.id;
+        if (!partyId) return;
+        bgmSseRef.current?.close();
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const es = new EventSource(`${baseUrl}/sse/party/${partyId}?token=${token}`);
+        bgmSseRef.current = es;
+        es.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.type === 'bgm_sync') handleBgmSync(data);
+          } catch {}
+        };
+        es.onerror = () => {
+          bgmSseRef.current?.close();
+          setTimeout(connect, 5000);
+        };
+      } catch {}
+    };
+
+    connect();
+    return () => bgmSseRef.current?.close();
+  }, [token]);
 
   return (
     <>
