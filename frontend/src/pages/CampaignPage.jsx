@@ -27,6 +27,15 @@ function VitalMini({ label, current, max, color }) {
 export default function CampaignPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const savePlaylist = async (queue) => {
+    try {
+      const existing = campaign?.gmSheetData || {};
+      const updated = { ...existing, bgmPlaylist: queue };
+      await api.put(`/campaigns/${id}`, { gmSheetData: updated });
+      setCampaign(c => c ? { ...c, gmSheetData: updated } : c);
+    } catch(e) { console.error('savePlaylist error:', e); }
+  };
   const [bgmUrl, setBgmUrl] = useState('');
   const [bgmLabel, setBgmLabel] = useState('');
   const [bgmQueue, setBgmQueue] = useState([]);

@@ -308,7 +308,7 @@ export default function PartyPage() {
           </div>
           <textarea value={inventory} onChange={e => { setInventory(e.target.value); clearTimeout(window._invTimer); window._invTimer = setTimeout(() => saveInventory(e.target.value), 1500); }}
             placeholder="Shared equipment, mission notes..."
-            rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 6 }} />
+            rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 6, color: C.dark }} />
         </div>
 
         <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.2em', color: C.mid, marginBottom: 10, textTransform: 'uppercase' }}>◈ Active Exorcists — Field Status</div>
