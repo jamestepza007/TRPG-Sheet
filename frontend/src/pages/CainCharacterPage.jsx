@@ -448,7 +448,21 @@ export default function CainCharacterPage() {
                 {[['NAME', 'name'], ['XID', 'xid'], ['AGND', 'agnd'], ['BLSPH', 'blsph']].map(([lbl, key]) => (
                   <div key={key}>
                     <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', color: C.mid }}>{lbl}:</div>
-                    <input value={sheet[key] || ''} onChange={e => update(key, e.target.value)}
+                    <input
+                      value={key === 'name' ? character.name : (sheet[key] || '')}
+                      onChange={e => {
+                        if (key === 'name') {
+                          setCharacter(c => ({ ...c, name: e.target.value }));
+                          update('name', e.target.value);
+                        } else {
+                          update(key, e.target.value);
+                        }
+                      }}
+                      onBlur={async e => {
+                        if (key === 'name' && e.target.value.trim()) {
+                          await api.put(`/characters/${id}`, { name: e.target.value.trim() });
+                        }
+                      }}
                       style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 13, color: C.dark, outline: 'none', padding: '2px 0' }} />
                   </div>
                 ))}

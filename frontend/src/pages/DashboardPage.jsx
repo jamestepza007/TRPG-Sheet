@@ -253,7 +253,10 @@ export default function DashboardPage() {
                       title="Double-click to rename"
                       style={{ fontFamily: 'Cinzel, serif', fontSize: 17, color: acc, marginBottom: 2, textShadow: '0 2px 8px rgba(0,0,0,0.8)', cursor: 'text' }}>{char.name} <span style={{ fontSize: 9, opacity: 0.4 }}>✎</span></div>
                   )}
-                  <div style={{ color: '#888', fontSize: 12, textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>{char.sheetData?.class || '—'} · Lv.{char.sheetData?.level || 1}</div>
+                  <div style={{ color: '#888', fontSize: 12, textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>{char.system === 'CAIN'
+                        ? `CAT ${['I','II','III','IV','V'][(char.sheetData?.cat || 1) - 1] || 'I'}`
+                        : `${char.sheetData?.class || '—'} · Lv.${char.sheetData?.level || 1}`
+                      }</div>
                   {char.sheetData?.currentHP !== undefined && (
                     <div style={{ marginTop: 10 }}>
                       <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: 4, height: 5, overflow: 'hidden' }}>

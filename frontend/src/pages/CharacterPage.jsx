@@ -258,6 +258,8 @@ export default function CharacterPage() {
   const [rollTrigger, setRollTrigger] = useState(0);
   const [cropSrc, setCropSrc] = useState(null); // portrait crop modal
   const [partyData, setPartyData] = useState(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameVal, setNameVal] = useState('');
   const sseRef = useRef(null);
   const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'notes'
   const autoSaveTimer = useRef(null);
@@ -417,7 +419,25 @@ export default function CharacterPage() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: `1px solid ${acc}33` }}>
           <div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: 24, color: acc }}>{character.name}</div>
+            {editingName ? (
+              <input autoFocus value={nameVal}
+                onChange={e => setNameVal(e.target.value)}
+                onBlur={async () => {
+                  if (nameVal.trim() && nameVal !== character.name) {
+                    await api.put(`/characters/${id}`, { name: nameVal.trim() });
+                    setCharacter(c => ({ ...c, name: nameVal.trim() }));
+                  }
+                  setEditingName(false);
+                }}
+                onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { setEditingName(false); } }}
+                style={{ fontFamily: 'Cinzel, serif', fontSize: 24, color: acc, background: 'transparent', border: 'none', borderBottom: `2px solid ${acc}`, outline: 'none', width: '100%' }} />
+            ) : (
+              <div onClick={() => { setEditingName(true); setNameVal(character.name); }}
+                title="Click to rename"
+                style={{ fontFamily: 'Cinzel, serif', fontSize: 24, color: acc, cursor: 'pointer' }}>
+                {character.name} <span style={{ fontSize: 12, opacity: 0.4 }}>✎</span>
+              </div>
+            )}
             <div style={{ color: '#555', fontSize: 13 }}>{system.name}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
