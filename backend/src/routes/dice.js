@@ -77,8 +77,6 @@ router.get('/history', async (req, res) => {
   }
 });
 
-export default router;
-
 // GET /api/dice/recent?since=timestamp
 // Public-ish endpoint for Owlbear Extension to poll
 // Returns rolls newer than ?since (unix ms)
@@ -115,3 +113,6 @@ router.get('/recent', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+export default router;
+
