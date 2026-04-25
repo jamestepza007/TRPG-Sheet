@@ -15,8 +15,10 @@ const DEFAULTS = {
   criticalSound: true,
   diceSound: true,
   bgmEnabled: false,
-  bgmTrackId: null, // stores youtubeId of selected track
+  bgmTrackId: null,
   bgmVolume: 50,
+  bgmSyncEnabled: true,
+  bgmDirectId: null,
 };
 
 function loadSettings() {
