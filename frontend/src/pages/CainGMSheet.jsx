@@ -248,10 +248,10 @@ export default function CainGMSheet() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontFamily: C.font, fontSize: 7, color: C.muted }}>{m.user?.username}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {inj > 0 && (
+                        {inj >= 0 && (
                           <div style={{ display: 'flex', gap: 2 }}>
                             {Array.from({ length: 5 }, (_, i) => (
-                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < inj ? C.red : 'transparent', border: `1px solid ${C.red}` }} />
+                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < inj ? C.red : 'transparent', border: `1px solid ${i < inj ? C.red : C.border}` }} />
                             ))}
                           </div>
                         )}
