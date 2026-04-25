@@ -21,6 +21,9 @@ router.post('/roll', authenticate, async (req, res) => {
         expression,
         result: parseInt(result),
         details: details || {},
+        characterName: characterName || null,
+        min: min !== undefined ? parseInt(min) : null,
+        max: max !== undefined ? parseInt(max) : null,
         sentToDiscord: false,
       }
     });

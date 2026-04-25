@@ -555,7 +555,20 @@ export default function CharacterPage() {
           {/* RIGHT sticky */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* Party mini panel */}
+              <DiceRoller system={character.system} stats={sheet} getModifier={system.getModifier}
+                externalExpr={diceExpr} rollTrigger={rollTrigger} characterName={character.name} />
+
+            </div>
+          </div>
+        </div>
+        </>)}
+      </div>
+      <FontSizeControl dark={true} />
+    </div>
+  );
+}
+
+{/* Party mini panel */}
               {partyData && (
                 <div className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -614,15 +627,4 @@ export default function CharacterPage() {
                   </div>
                 </div>
               )}
-              <DiceRoller system={character.system} stats={sheet} getModifier={system.getModifier}
-                externalExpr={diceExpr} rollTrigger={rollTrigger} characterName={character.name} />
 
-            </div>
-          </div>
-        </div>
-        </>)}
-      </div>
-      <FontSizeControl dark={true} />
-    </div>
-  );
-}
