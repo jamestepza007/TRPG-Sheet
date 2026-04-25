@@ -40,6 +40,7 @@ export function handleBgmSync(data) {
   } else if (data.enabled === false) {
     setAudioSetting('bgmEnabled', false);
     setAudioSetting('bgmDirectId', null);
+    setAudioSetting('bgmTrackId', null);
   }
 }
 export function setAudioSetting(key, value) {
@@ -238,7 +239,7 @@ export default function AudioSettings() {
                 <div style={{ fontSize: 9, color: '#555', marginBottom: 4, fontFamily: 'Cinzel, serif' }}>Track:</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   {tracks.map((t) => (
-                    <button key={t.youtubeId} onClick={() => set('bgmTrackId', t.youtubeId)}
+                    <button key={t.youtubeId} onClick={() => { set('bgmDirectId', null); set('bgmTrackId', t.youtubeId); }}
                       style={{ textAlign: 'left', padding: '4px 8px', background: s.bgmTrackId === t.youtubeId ? '#1a1208' : 'transparent', border: `1px solid ${s.bgmTrackId === t.youtubeId ? '#c9a84c' : '#2a2a2a'}`, color: s.bgmTrackId === t.youtubeId ? '#c9a84c' : '#666', fontFamily: 'Cinzel, serif', fontSize: 9, cursor: 'pointer', borderRadius: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontSize: 8 }}>{s.bgmTrackId === t.youtubeId ? '▶' : '○'}</span>
                       {t.label}
