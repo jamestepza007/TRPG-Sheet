@@ -558,15 +558,6 @@ export default function CharacterPage() {
               <DiceRoller system={character.system} stats={sheet} getModifier={system.getModifier}
                 externalExpr={diceExpr} rollTrigger={rollTrigger} characterName={character.name} />
 
-            </div>
-          </div>
-        </div>
-        </>)}
-      </div>
-      <FontSizeControl dark={true} />
-    </div>
-  );
-}
 
 {/* Party mini panel */}
               {partyData && (
@@ -628,3 +619,14 @@ export default function CharacterPage() {
                 </div>
               )}
 
+              
+
+            </div>
+          </div>
+        </div>
+        </>)}
+      </div>
+      <FontSizeControl dark={true} />
+    </div>
+  );
+}
