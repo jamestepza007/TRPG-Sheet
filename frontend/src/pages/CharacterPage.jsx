@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api.js';
+import { handleBgmSync } from '../components/AudioSettings.jsx';
 import { getSystem } from '../utils/systems.js';
 import DiceRoller from '../components/DiceRoller.jsx';
 import toast from 'react-hot-toast';
@@ -292,6 +293,9 @@ export default function CharacterPage() {
     es.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
+        if (data.type === 'bgm_sync') {
+          handleBgmSync(data);
+        }
         if (data.type === 'character_updated') {
           setPartyData(prev => !prev ? prev : {
             ...prev,
