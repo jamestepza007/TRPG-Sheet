@@ -236,6 +236,9 @@ export default function PartyPage() {
         if (data.type === 'bgm_sync') {
           handleBgmSync(data);
         }
+        if (data.type === 'inventory_updated') {
+          setInventory(data.inventory || '');
+        }
         if (data.type === 'character_updated') {
           setPartyData(prev => !prev ? prev : {
             ...prev,

@@ -150,7 +150,7 @@ export default function AudioSettings() {
   useEffect(() => {
     api.get('/bgm').then(res => {
       if (res.data?.length > 0) {
-        setTracks(res.data);
+        setTracks(Array.isArray(res.data) ? res.data : FALLBACK_TRACKS);
         // Auto-select first track if none selected
         if (!_settings.bgmTrackId) {
           setAudioSetting('bgmTrackId', res.data[0].youtubeId);

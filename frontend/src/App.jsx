@@ -36,33 +36,34 @@ export default function App() {
   useEffect(() => {
     if (!token) { bgmSseRef.current?.close(); return; }
 
+    const sseConnections = [];
+
     const connect = async () => {
       try {
         const { default: api } = await import('./utils/api.js');
         const res = await api.get('/parties/mine');
-        const parties = res.data;
-        if (!parties?.length) return;
-        const partyId = parties[0]?.party?.id;
-        if (!partyId) return;
-        bgmSseRef.current?.close();
+        const parties = Array.isArray(res.data) ? res.data : [];
+        if (!parties.length) return;
         const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        const es = new EventSource(`${baseUrl}/sse/party/${partyId}?token=${token}`);
-        bgmSseRef.current = es;
-        es.onmessage = (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            if (data.type === 'bgm_sync') handleBgmSync(data);
-          } catch {}
-        };
-        es.onerror = () => {
-          bgmSseRef.current?.close();
-          setTimeout(connect, 5000);
-        };
+        // Connect to ALL parties
+        parties.forEach(m => {
+          const partyId = m?.party?.id;
+          if (!partyId) return;
+          const es = new EventSource(`${baseUrl}/sse/party/${partyId}?token=${token}`);
+          sseConnections.push(es);
+          es.onmessage = (e) => {
+            try {
+              const data = JSON.parse(e.data);
+              if (data.type === 'bgm_sync') handleBgmSync(data);
+            } catch {}
+          };
+          es.onerror = () => es.close();
+        });
       } catch {}
     };
 
     connect();
-    return () => bgmSseRef.current?.close();
+    return () => sseConnections.forEach(es => es.close());
   }, [token]);
 
   return (

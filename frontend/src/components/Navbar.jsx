@@ -20,7 +20,7 @@ export default function Navbar() {
         {user.role === 'ADMIN' && <Link to="/admin" className={isActive('/admin')}>Admin</Link>}
         <Link to="/profile" className={isActive('/profile')}>Profile</Link>
         <span style={{ color: '#333', fontSize: 12, padding: '0 4px' }}>|</span>
-        <span className={`badge badge-${user.role.toLowerCase()}`} style={{ fontSize: 10 }}>{user.role}</span>
+        <span className={`badge badge-${user?.role?.toLowerCase()}`} style={{ fontSize: 10 }}>{user?.role}</span>
         <span style={{ color: '#555', fontSize: 13, padding: '0 4px' }}>{user.username}</span>
         <button className="btn-ghost btn-sm" onClick={handleLogout}>Logout</button>
       </div>

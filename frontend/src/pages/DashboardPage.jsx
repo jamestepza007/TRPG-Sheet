@@ -109,8 +109,8 @@ export default function DashboardPage() {
   const fetchAll = async () => {
     try {
       const [charRes, partyRes] = await Promise.all([api.get('/characters'), api.get('/parties/mine')]);
-      setCharacters(charRes.data);
-      setMyParties(partyRes.data);
+      setCharacters(Array.isArray(charRes.data) ? charRes.data : []);
+      setMyParties(Array.isArray(partyRes.data) ? partyRes.data : []);
       if (user?.role === 'GM' || user?.role === 'ADMIN') {
         const campRes = await api.get('/campaigns');
         setCampaigns(campRes.data);

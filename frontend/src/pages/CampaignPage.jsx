@@ -28,6 +28,7 @@ export default function CampaignPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [bgmUrl, setBgmUrl] = useState('');
+  const [bgmLabel, setBgmLabel] = useState('');
   const [bgmQueue, setBgmQueue] = useState([]);
   const [bgmPlaying, setBgmPlaying] = useState(null);
   const [campaign, setCampaign] = useState(null);
@@ -50,6 +51,7 @@ export default function CampaignPage() {
         return;
       }
       setCampaign(res.data);
+      if (res.data.gmSheetData?.bgmPlaylist) setBgmQueue(res.data.gmSheetData.bgmPlaylist);
       setSystem(getSystem(res.data.system));
       if (res.data.party?.id) startSSE(res.data.party.id);
     } catch { toast.error('Campaign not found'); navigate('/'); }
@@ -150,58 +152,54 @@ export default function CampaignPage() {
             </div>
 
             {/* Add to queue */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <input value={bgmUrl} onChange={e => setBgmUrl(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (() => {
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input value={bgmLabel} onChange={e => setBgmLabel(e.target.value)}
+                  placeholder="Song name..."
+                  style={{ width: 140, fontFamily: 'Cinzel, serif', fontSize: 11, flexShrink: 0 }} />
+                <input value={bgmUrl} onChange={e => setBgmUrl(e.target.value)}
+                  placeholder="YouTube URL..."
+                  style={{ flex: 1, fontFamily: 'Share Tech Mono, monospace', fontSize: 11 }} />
+                <button onClick={() => {
                   if (!bgmUrl.trim()) return;
-                  const match = bgmUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-                  const ytId = match ? match[1] : bgmUrl.trim();
-                  if (ytId) { setBgmQueue(q => [...q, { id: ytId, url: bgmUrl }]); setBgmUrl(''); }
-                })()}
-                placeholder="Paste YouTube URL..."
-                style={{ flex: 1, fontFamily: 'Share Tech Mono, monospace', fontSize: 12 }} />
-              <button onClick={() => {
-                if (!bgmUrl.trim()) return;
-                const match = bgmUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-                const ytId = match ? match[1] : bgmUrl.trim();
-                if (ytId.length !== 11) return toast.error('Invalid YouTube URL');
-                setBgmQueue(q => [...q, { id: ytId, url: bgmUrl }]);
-                setBgmUrl('');
-              }} className="btn-ghost btn-sm">+ Add</button>
-              <button onClick={() => {
-                if (!bgmUrl.trim()) return;
-                const match = bgmUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-                const ytId = match ? match[1] : bgmUrl.trim();
-                if (!ytId || ytId.length !== 11) return toast.error('Invalid YouTube URL');
-                if (campaign?.party?.id) {
-                  api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: ytId, enabled: true });
-                  handleBgmSync({ enabled: true, trackId: ytId }); // GM also hears it
-                  setBgmPlaying(ytId);
-                  toast.success('▶ Playing for all players');
-                }
-              }} className="btn-primary btn-sm">▶ Play Now</button>
+                  const match = bgmUrl.match(/[?&]v=([a-zA-Z0-9_-]{11})|youtu\.be\/([a-zA-Z0-9_-]{11})/);
+                  const ytId = match ? (match[1] || match[2]) : null;
+                  if (!ytId) return toast.error('Invalid YouTube URL');
+                  const newQ = [...bgmQueue, { id: ytId, url: bgmUrl, label: bgmLabel || bgmUrl }];
+                  setBgmQueue(newQ);
+                  savePlaylist(newQ);
+                  setBgmUrl(''); setBgmLabel('');
+                  toast.success('Added to playlist');
+                }} className="btn-ghost btn-sm">+ Add</button>
+              </div>
             </div>
 
             {/* Queue */}
             {bgmQueue.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
                 {bgmQueue.map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: bgmPlaying === item.id ? `${acc}18` : 'rgba(0,0,0,0.2)', border: `1px solid ${bgmPlaying === item.id ? acc+'44' : '#2a2a2a'}`, borderRadius: 4, padding: '6px 10px' }}>
-                    <button onClick={() => {
+                  <div key={i}
+                    onClick={() => {
                       if (campaign?.party?.id) {
                         api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: item.id, enabled: true });
-                        handleBgmSync({ enabled: true, trackId: item.id }); // GM also hears it
+                        handleBgmSync({ enabled: true, trackId: item.id });
                         setBgmPlaying(item.id);
-                        toast.success('▶ Playing for all players');
+                        toast.success(`▶ ${item.label || 'Playing'}`);
                       }
-                    }} style={{ background: 'transparent', border: 'none', color: bgmPlaying === item.id ? acc : '#888', cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0 }}>
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, background: bgmPlaying === item.id ? `${acc}18` : 'rgba(0,0,0,0.2)', border: `1px solid ${bgmPlaying === item.id ? acc+'66' : '#2a2a2a'}`, borderRadius: 4, padding: '8px 12px', cursor: 'pointer', transition: 'all 0.15s' }}>
+                    <span style={{ color: bgmPlaying === item.id ? acc : '#666', fontSize: 14, flexShrink: 0 }}>
                       {bgmPlaying === item.id ? '▶' : '○'}
-                    </button>
-                    <span style={{ flex: 1, fontFamily: 'Share Tech Mono, monospace', fontSize: 10, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.url}
                     </span>
-                    <button onClick={() => setBgmQueue(q => q.filter((_, j) => j !== i))}
-                      style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, padding: 0, flexShrink: 0 }}>✕</button>
+                    <span style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: 11, color: bgmPlaying === item.id ? acc : '#aaa' }}>
+                      {item.label || item.url}
+                    </span>
+                    <button onClick={e => {
+                      e.stopPropagation();
+                      const newQ = bgmQueue.filter((_, j) => j !== i);
+                      setBgmQueue(newQ);
+                      savePlaylist(newQ);
+                    }} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, padding: 0, flexShrink: 0 }}>✕</button>
                   </div>
                 ))}
               </div>
@@ -213,7 +211,7 @@ export default function CampaignPage() {
               <button onClick={() => {
                 if (campaign?.party?.id) {
                   api.post(`/parties/${campaign.party.id}/bgm-sync`, { enabled: false });
-                  handleBgmSync({ enabled: false }); // GM also stops
+                  handleBgmSync({ enabled: false });
                   setBgmPlaying(null);
                   toast.success('■ BGM stopped');
                 }
