@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import AudioSettings from './components/AudioSettings.jsx';
+import { handleBgmSync } from './components/AudioSettings.jsx';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './hooks/useAuth.js';
 import Navbar from './components/Navbar.jsx';

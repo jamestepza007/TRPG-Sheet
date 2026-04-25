@@ -60,35 +60,33 @@ function YoutubeBGM({ trackId, volume, playing }) {
   const readyRef = useRef(false);
 
   useEffect(() => {
-    // Load YouTube IFrame API
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.head.appendChild(tag);
-    }
+    if (!trackId) return;
 
     const initPlayer = () => {
       if (!iframeRef.current) return;
       playerRef.current = new window.YT.Player(iframeRef.current, {
         videoId: trackId,
-        playerVars: { autoplay: 0, controls: 0, loop: 1, playlist: trackId },
+        playerVars: { autoplay: 1, controls: 0, loop: 1, playlist: trackId, mute: 0 },
         events: {
           onReady: (e) => {
             readyRef.current = true;
+            e.target.unMute();
             e.target.setVolume(volume);
             if (playing) e.target.playVideo();
           },
           onStateChange: (e) => {
-            // Loop: restart when ended
-            if (e.data === window.YT.PlayerState.ENDED) {
-              e.target.playVideo();
-            }
+            if (e.data === window.YT.PlayerState.ENDED) e.target.playVideo();
           }
         }
       });
     };
 
-    if (window.YT?.Player) {
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+      window.onYouTubeIframeAPIReady = initPlayer;
+    } else if (window.YT.Player) {
       initPlayer();
     } else {
       window.onYouTubeIframeAPIReady = initPlayer;
@@ -107,8 +105,13 @@ function YoutubeBGM({ trackId, volume, playing }) {
 
   useEffect(() => {
     if (!readyRef.current || !playerRef.current) return;
-    if (playing) playerRef.current.playVideo();
-    else playerRef.current.pauseVideo();
+    if (playing) {
+      playerRef.current.unMute();
+      playerRef.current.setVolume(volume);
+      playerRef.current.playVideo();
+    } else {
+      playerRef.current.pauseVideo();
+    }
   }, [playing]);
 
   return (
