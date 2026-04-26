@@ -42,8 +42,8 @@ function CATSelector({ value, onChange }) {
   return (
     <div style={{ display: 'flex', gap: 4 }}>
       {levels.map((l, i) => (
-        <div key={i} onClick={() => onChange(i)}
-          style={{ width: 28, height: 28, border: `1px solid ${C.borderDark}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontFamily: C.fontSans, fontSize: 10, fontWeight: 700, background: value === i ? C.dark : 'transparent', color: value === i ? '#f2ede3' : C.dark, clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }}>
+        <div key={i} onClick={() => onChange(i + 1)}
+          style={{ width: 28, height: 28, border: `1px solid ${C.borderDark}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontFamily: C.fontSans, fontSize: 10, fontWeight: 700, background: value === i + 1 ? C.dark : 'transparent', color: value === i + 1 ? '#f2ede3' : C.dark, clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }}>
           {l}
         </div>
       ))}
@@ -53,7 +53,7 @@ function CATSelector({ value, onChange }) {
 }
 
 const defaultSin = () => ({
-  name: '', host: '', type: '', form: 1, cat: 0, deceased: false,
+  name: '', host: '', type: '', form: 1, cat: 1, deceased: false,
   traumas: ['', '', ''],
   executionSlashes: 0,
   domains: ['', '', ''],
@@ -166,7 +166,7 @@ export default function CainGMSheet() {
   const statusColor = { saved: '#2a5a2a', saving: '#5a4a00', dirty: '#888', error: '#8b0000' }[saveStatus];
   const statusLabel = { saved: '■ FILED', saving: '◌ FILING...', dirty: '○ UNSAVED', error: '✕ ERROR' }[saveStatus];
   const phaseLabels = ['BRIEFING','ARRIVAL','TRACK','INVESTIGATE','PREPARE','CONFRONT','EXECUTE'];
-  const execNeeded = 7 + (mission.pressure || 0) + (sin.cat || 0);
+  const execNeeded = 7 + (mission.pressure || 0) + (sin.cat || 1);
 
   return (
     <div style={{ background: '#d4cfc4', minHeight: '100vh', padding: 20 }}>
@@ -244,8 +244,10 @@ export default function CainGMSheet() {
               {campaign.party.members.map(m => {
                 const sd = m.character?.sheetData || {};
                 const cat = sd.cat || 1;
+                const iMax = 3 + (sd.visitationRight ? 1 : 0) + (sd.immaculate ? 1 : 0);
                 const inj = sd.injuries || 0;
-                const eMax = sd.resilientAgenda ? 6 : Math.max(1, 6 - inj);
+                const eBase = 6 + (sd.privateRooms ? 1 : 0) + (sd.leaveOfAbsence ? 1 : 0);
+                const eMax = sd.resilientAgenda ? eBase : Math.max(1, eBase - inj);
                 const str = sd.stress || 0;
                 return (
                   <div key={m.id} style={{ border: `1px solid ${C.border}`, padding: '6px 8px', background: C.bg }}>
@@ -267,10 +269,10 @@ export default function CainGMSheet() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontFamily: C.font, fontSize: 7, color: C.muted }}>{m.user?.username}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {inj >= 0 && (
+                        {iMax > 0 && (
                           <div style={{ display: 'flex', gap: 2 }}>
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < inj ? C.red : 'transparent', border: `1px solid ${i < inj ? C.red : C.border}` }} />
+                            {Array.from({ length: iMax }, (_, i) => (
+                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < inj ? C.red : 'transparent', border: `1px solid ${i < inj ? C.red : C.border}`, opacity: i >= 3 ? 0.5 : 1 }} />
                             ))}
                           </div>
                         )}
@@ -502,7 +504,7 @@ export default function CainGMSheet() {
                 </div>
                 <div style={{ marginTop: 10 }}>
                   <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, fontStyle: 'italic', color: C.mid, marginBottom: 4 }}>CATEGORY (MARK CLEARLY):</div>
-                  <CATSelector value={sin.cat || 0} onChange={v => updateSin(activeTab, 'cat', v)} />
+                  <CATSelector value={sin.cat || 1} onChange={v => updateSin(activeTab, 'cat', v)} />
                 </div>
               </div>
 
@@ -527,7 +529,7 @@ export default function CainGMSheet() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                     <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700 }}>SLASHES (harm taken):</div>
                     <div style={{ fontFamily: C.font, fontSize: 10, color: C.red, fontWeight: 700 }}>
-                      Needs: 7 + {mission.pressure || 0} (pressure) + {sin.cat || 0} (CAT) = {execNeeded}
+                      Needs: 7 + {mission.pressure || 0} (pressure) + {sin.cat || 1} (CAT) = {execNeeded}
                     </div>
                   </div>
                   <SlashTrack value={sin.executionSlashes || 0} max={execNeeded}
