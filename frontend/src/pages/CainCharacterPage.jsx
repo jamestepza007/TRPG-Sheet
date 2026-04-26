@@ -348,15 +348,37 @@ function AgendaAbilityPopup({ agendaId, onSelect, onClose }) {
 }
 
 // ── Observed Power Popup ─────────────────────────────────────────
+
+// ── Blasphemy color map (4 colors from PDF) ─────────────────────
+const BLASPHEMY_COLOR = {
+  'I. TENSION':    { bg: '#8b1a1a', text: '#fff' },   // Red
+  'II. ARDENCE':   { bg: '#8b1a1a', text: '#fff' },
+  'III. FLUX':     { bg: '#8b1a1a', text: '#fff' },
+  'IV. VECTOR':    { bg: '#7a6800', text: '#fff' },   // Yellow/Gold
+  'V. GATE':       { bg: '#7a6800', text: '#fff' },
+  'VI. SMOTHER':   { bg: '#7a6800', text: '#fff' },
+  'VII. WHISPER':  { bg: '#1a3d6b', text: '#fff' },   // Blue
+  'VIII. EDIT':    { bg: '#1a3d6b', text: '#fff' },
+  'IX. BIND':      { bg: '#1a3d6b', text: '#fff' },
+  'X. JAUNT':      { bg: '#4a1a6b', text: '#fff' },   // Purple
+  'XI. PALACE':    { bg: '#4a1a6b', text: '#fff' },
+  'XII. SYMPATHY': { bg: '#4a1a6b', text: '#fff' },
+};
 function ObservedPowerPopup({ onSelect, onClose }) {
   const [search, setSearch] = useState('');
+  const [activeBlasp, setActiveBlasp] = useState('all');
   const allPowers = getAllBlasphemyPowers();
-  const filtered = search.trim()
-    ? allPowers.filter(p =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.blasphemy.toLowerCase().includes(search.toLowerCase())
-      )
-    : allPowers;
+
+  // All blasphemy names in order
+  const allBlasphemies = BLASPHEMIES.filter(b => b.id !== 'CUSTOM').map(b => b.name);
+
+  const filtered = allPowers.filter(p => {
+    const matchBlasp = activeBlasp === 'all' || p.blasphemy === activeBlasp;
+    const matchSearch = !search.trim() ||
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.blasphemy.toLowerCase().includes(search.toLowerCase());
+    return matchBlasp && matchSearch;
+  });
 
   const grouped = {};
   filtered.forEach(p => {
@@ -364,13 +386,49 @@ function ObservedPowerPopup({ onSelect, onClose }) {
     grouped[p.blasphemy].push(p);
   });
 
+  const COLOR_GROUPS = [
+    { bg: '#8b1a1a', light: '#f5e8e8', ids: ['I. TENSION','II. ARDENCE','III. FLUX'] },
+    { bg: '#7a6000', light: '#f5f0e0', ids: ['IV. VECTOR','V. GATE','VI. SMOTHER'] },
+    { bg: '#1a3d6b', light: '#e8eef5', ids: ['VII. WHISPER','VIII. EDIT','IX. BIND'] },
+    { bg: '#4a1a6b', light: '#f0e8f5', ids: ['X. JAUNT','XI. PALACE','XII. SYMPATHY'] },
+  ];
+
+  const getColor = (name) => {
+    const g = COLOR_GROUPS.find(g => g.ids.includes(name));
+    return g || { bg: '#444', light: '#f0f0f0' };
+  };
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={onClose}>
-      <div style={{ background: '#f2ede3', border: '2px solid #1a1a1a', maxWidth: 520, width: '90%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+      <div style={{ background: '#f2ede3', border: '2px solid #1a1a1a', maxWidth: 560, width: '92%', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
         <div style={{ padding: '12px 16px', borderBottom: '2px solid #1a1a1a' }}>
           <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 8 }}>OBSERVED POWERS — เลือก Power</div>
+
+          {/* Blasphemy filter buttons — grouped by color */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+            <button
+              onClick={() => setActiveBlasp('all')}
+              style={{ padding: '3px 10px', fontSize: 9, fontFamily: "'Arial Narrow', Arial, sans-serif", fontWeight: 700, letterSpacing: '0.08em', border: '1px solid #999', cursor: 'pointer', background: activeBlasp === 'all' ? '#1a1a1a' : 'transparent', color: activeBlasp === 'all' ? '#f2ede3' : '#555' }}>
+              ALL
+            </button>
+            {COLOR_GROUPS.map(grp => (
+              grp.ids.map(bid => {
+                const active = activeBlasp === bid;
+                return (
+                  <button key={bid}
+                    onClick={() => setActiveBlasp(active ? 'all' : bid)}
+                    style={{ padding: '3px 8px', fontSize: 9, fontFamily: "'Arial Narrow', Arial, sans-serif", fontWeight: 700, letterSpacing: '0.06em', border: `1px solid ${grp.bg}`, cursor: 'pointer', background: active ? grp.bg : grp.light, color: active ? '#fff' : grp.bg, transition: 'all 0.1s' }}>
+                    {bid}
+                  </button>
+                );
+              })
+            ))}
+          </div>
+
           <input
             autoFocus
             value={search}
@@ -379,26 +437,35 @@ function ObservedPowerPopup({ onSelect, onClose }) {
             style={{ width: '100%', padding: '6px 8px', border: '1px solid #999', background: '#fff', fontFamily: "'Courier New', monospace", fontSize: 11, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
+
+        {/* Power list */}
         <div style={{ overflowY: 'auto', padding: '8px 16px', flex: 1 }}>
-          {Object.entries(grouped).map(([blasphemyName, powers]) => (
-            <div key={blasphemyName}>
-              <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#888', marginTop: 10, marginBottom: 4, borderBottom: '1px solid #ccc', paddingBottom: 2 }}>{blasphemyName}</div>
-              {powers.map(p => (
-                <div key={p.name}
-                  onClick={() => { onSelect(p.name.toUpperCase() + '\n' + p.description); onClose(); }}
-                  style={{ padding: '6px 8px', marginBottom: 4, background: 'rgba(0,0,0,0.03)', border: '1px solid #bbb', cursor: 'pointer' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}>
-                  <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{p.name}</div>
-                  <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: '#555', lineHeight: 1.3, marginTop: 2 }}>{p.description.substring(0, 120)}{p.description.length > 120 ? '...' : ''}</div>
+          {Object.entries(grouped).map(([blasphemyName, powers]) => {
+            const clr = getColor(blasphemyName);
+            return (
+              <div key={blasphemyName}>
+                {/* Blasphemy header with color bg */}
+                <div style={{ background: clr.bg, color: '#fff', fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '4px 8px', marginTop: 10, marginBottom: 4 }}>
+                  {blasphemyName}
                 </div>
-              ))}
-            </div>
-          ))}
+                {powers.map(p => (
+                  <div key={p.name}
+                    onClick={() => { onSelect(p.name.toUpperCase() + '\n' + p.description); onClose(); }}
+                    style={{ padding: '6px 8px', marginBottom: 4, background: clr.light, border: `1px solid ${clr.bg}44`, cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.background = clr.bg + '22'}
+                    onMouseLeave={e => e.currentTarget.style.background = clr.light}>
+                    <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: clr.bg }}>{p.name}</div>
+                    <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: '#555', lineHeight: 1.3, marginTop: 2 }}>{p.description.substring(0, 130)}{p.description.length > 130 ? '...' : ''}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
           {Object.keys(grouped).length === 0 && (
             <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: '#888', padding: '20px 0', textAlign: 'center' }}>ไม่พบ power ที่ตรงกัน</div>
           )}
         </div>
+
         <div style={{ padding: '8px 16px', borderTop: '1px solid #ccc' }}>
           <button onClick={onClose} style={{ padding: '4px 14px', background: '#1a1a1a', color: '#f2ede3', border: 'none', fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, letterSpacing: '0.1em', cursor: 'pointer' }}>CLOSE</button>
         </div>
@@ -721,7 +788,7 @@ export default function CainCharacterPage() {
                 execMax={execMax}
                 onStressChange={v => update('stress', v)}
                 onInjury={() => {
-                  const newInjuries = Math.min(5, injuries + 1);
+                  const newInjuries = Math.min(injuryMax, injuries + 1);
                   update('injuries', newInjuries);
                   update('stress', 0);
                 }}
@@ -972,8 +1039,10 @@ export default function CainCharacterPage() {
                   const sd = m.character?.sheetData || {};
                   const isMe = m.character?.id === id;
                   const cat = sd.cat || 1;
+                  const iMax = 3 + (sd.visitationRight ? 1 : 0) + (sd.immaculate ? 1 : 0);
                   const inj = sd.injuries || 0;
-                  const eMax = sd.resilientAgenda ? 6 : Math.max(1, 6 - inj);
+                  const eBase = 6 + (sd.privateRooms ? 1 : 0) + (sd.leaveOfAbsence ? 1 : 0);
+                  const eMax = sd.resilientAgenda ? eBase : Math.max(1, eBase - inj);
                   const str = sd.stress || 0;
                   return (
                     <div key={m.id} style={{ border: `1px solid ${isMe ? C.borderDark : C.border}`, background: isMe ? 'rgba(0,0,0,0.05)' : 'transparent', padding: '5px 7px' }}>
@@ -994,13 +1063,13 @@ export default function CainCharacterPage() {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ fontFamily: C.font, fontSize: 7, color: C.muted }}>{m.user?.username}</div>
-                        {(sd.injuries || 0) > 0 && (
+                        {(() => { return iMax > 0 && (
                           <div style={{ display: 'flex', gap: 1 }}>
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', border: `1px solid ${C.red}`, background: i < (sd.injuries || 0) ? C.red : 'transparent' }} />
+                            {Array.from({ length: iMax }, (_, i) => (
+                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', border: `1px solid ${C.red}`, background: i < inj ? C.red : 'transparent' }} />
                             ))}
                           </div>
-                        )}
+                        ); })()}
                       </div>
                     </div>
                   );
