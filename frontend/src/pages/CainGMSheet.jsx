@@ -215,6 +215,25 @@ export default function CainGMSheet() {
           </div>
         </div>
 
+        {/* ── Owlbear Campaign ID ── */}
+        <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 16 }}>
+          <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>
+            🎲 OWLBEAR CAMPAIGN ID
+          </div>
+          <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: C.dark, letterSpacing: '0.03em', flex: 1, userSelect: 'all' }}>
+              {campaign.id}
+            </div>
+            <button onClick={() => { navigator.clipboard.writeText(campaign.id); toast.success('Campaign ID copied!'); }}
+              style={{ background: C.dark, color: '#f2ede3', border: 'none', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', padding: '5px 14px', cursor: 'pointer', textTransform: 'uppercase' }}>
+              COPY
+            </button>
+          </div>
+          <div style={{ padding: '0 12px 8px', fontFamily: C.font, fontSize: 8, color: C.muted }}>
+            Paste in Owlbear extension to filter dice rolls for this campaign
+          </div>
+        </div>
+
         {/* ── Party Members ── */}
         {campaign.party?.members?.length > 0 && (
           <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 16 }}>

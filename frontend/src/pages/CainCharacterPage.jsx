@@ -778,7 +778,7 @@ export default function CainCharacterPage() {
           <div style={{ border: `1px solid ${C.borderDark}` }}>
             <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>DICE ROLLER</div>
             <div style={{ padding: '10px' }}>
-              <CainDiceRoller sheet={sheet} system="CAIN" characterName={character.name} />
+              <CainDiceRoller sheet={sheet} system="CAIN" characterName={character.name} campaignId={partyData?.campaign?.id || null} />
             </div>
           </div>
         </div>

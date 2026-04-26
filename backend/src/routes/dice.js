@@ -88,8 +88,9 @@ router.get('/recent', async (req, res) => {
   try {
     const since = parseInt(req.query.since) || (Date.now() - 10000);
     const sinceDate = new Date(since);
+    const campaignFilter = req.query.campaignId ? { campaignId: req.query.campaignId } : {};
     const rolls = await prisma.diceLog.findMany({
-      where: { createdAt: { gt: sinceDate } },
+      where: { createdAt: { gt: sinceDate }, ...campaignFilter },
       orderBy: { createdAt: 'asc' },
       take: 20,
     });

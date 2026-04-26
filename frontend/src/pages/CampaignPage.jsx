@@ -141,7 +141,7 @@ export default function CampaignPage() {
         </div>
 
         {/* Invite code */}
-        <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 16, marginBottom: 24 }}>
+        <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 16, marginBottom: 16 }}>
           <div className="section-title" style={{ color: acc }}>📋 Invite Code</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <code style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: 15, color: acc, background: 'rgba(0,0,0,0.4)', padding: '8px 16px', borderRadius: 6, flex: 1 }}>
@@ -150,6 +150,20 @@ export default function CampaignPage() {
             <button className="btn-ghost btn-sm" onClick={() => { navigator.clipboard.writeText(campaign.inviteCode); toast.success('Copied!'); }}>Copy</button>
           </div>
           <p style={{ color: '#444', fontSize: 12, marginTop: 8, fontFamily: 'Cinzel, serif' }}>Share with players to join · Updates are live</p>
+        </div>
+
+        {/* Owlbear Campaign ID */}
+        <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 16, marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div className="section-title" style={{ color: acc, margin: 0 }}>🎲 Owlbear Campaign ID</div>
+            <span style={{ fontSize: 10, color: '#555' }}>Paste in Owlbear extension to filter dice rolls</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <code style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: 12, color: acc, background: 'rgba(0,0,0,0.4)', padding: '8px 16px', borderRadius: 6, flex: 1, userSelect: 'all' }}>
+              {campaign.id}
+            </code>
+            <button className="btn-ghost btn-sm" onClick={() => { navigator.clipboard.writeText(campaign.id); toast.success('Campaign ID copied!'); }}>Copy</button>
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
