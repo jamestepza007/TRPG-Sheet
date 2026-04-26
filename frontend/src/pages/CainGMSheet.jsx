@@ -78,6 +78,7 @@ export default function CainGMSheet() {
   const navigate = useNavigate();
   const [campaign, setCampaign] = useState(null);
   const [bgmUrl, setBgmUrl] = useState('');
+  const [bgmLabel, setBgmLabel] = useState('');
   const [bgmQueue, setBgmQueue] = useState([]);
   const [bgmPlaying, setBgmPlaying] = useState(null);
   const [gmData, setGmData] = useState({ sins: [defaultSin()], mission: defaultMission(), notes: '' });
@@ -92,12 +93,22 @@ export default function CainGMSheet() {
     try {
       const res = await api.get(`/campaigns/${id}`);
       setCampaign(res.data);
+      if (res.data.gmSheetData?.bgmPlaylist) setBgmQueue(res.data.gmSheetData.bgmPlaylist);
       if (res.data.gmSheetData) {
         const d = { sins: [defaultSin()], mission: defaultMission(), notes: '', ...res.data.gmSheetData };
         setGmData(d);
         gmRef.current = d;
       }
     } catch { toast.error('Campaign not found'); navigate('/'); }
+  };
+
+  const savePlaylist = async (queue) => {
+    try {
+      const existing = campaign?.gmSheetData || {};
+      await api.put(`/campaigns/${id}`, {
+        gmSheetData: { ...existing, bgmPlaylist: queue }
+      });
+    } catch(e) { console.error('savePlaylist error:', e); }
   };
 
   const doSave = useCallback(async (data) => {
@@ -204,6 +215,25 @@ export default function CainGMSheet() {
           </div>
         </div>
 
+        {/* ── Owlbear Campaign ID ── */}
+        <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 16 }}>
+          <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>
+            🎲 OWLBEAR CAMPAIGN ID
+          </div>
+          <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: C.dark, letterSpacing: '0.03em', flex: 1, userSelect: 'all' }}>
+              {campaign.id}
+            </div>
+            <button onClick={() => { navigator.clipboard.writeText(campaign.id); toast.success('Campaign ID copied!'); }}
+              style={{ background: C.dark, color: '#f2ede3', border: 'none', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', padding: '5px 14px', cursor: 'pointer', textTransform: 'uppercase' }}>
+              COPY
+            </button>
+          </div>
+          <div style={{ padding: '0 12px 8px', fontFamily: C.font, fontSize: 8, color: C.muted }}>
+            Paste in Owlbear extension to filter dice rolls for this campaign
+          </div>
+        </div>
+
         {/* ── Party Members ── */}
         {campaign.party?.members?.length > 0 && (
           <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 16 }}>
@@ -234,10 +264,19 @@ export default function CainGMSheet() {
                         ))}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontFamily: C.font, fontSize: 7, color: C.muted }}>{m.user?.username}</span>
-                      <button onClick={() => navigate(m.character?.system === 'CAIN' ? `/characters/cain/${m.character.id}` : `/characters/${m.character.id}`)}
-                        style={{ background: 'transparent', border: `1px solid ${C.border}`, fontFamily: C.fontSans, fontSize: 7, padding: '1px 6px', cursor: 'pointer', color: C.mid }}>VIEW</button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {inj >= 0 && (
+                          <div style={{ display: 'flex', gap: 2 }}>
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < inj ? C.red : 'transparent', border: `1px solid ${i < inj ? C.red : C.border}` }} />
+                            ))}
+                          </div>
+                        )}
+                        <button onClick={() => navigate(m.character?.system === 'CAIN' ? `/characters/cain/${m.character.id}` : `/characters/${m.character.id}`)}
+                          style={{ background: 'transparent', border: `1px solid ${C.border}`, fontFamily: C.fontSans, fontSize: 7, padding: '1px 6px', cursor: 'pointer', color: C.mid }}>VIEW</button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -253,6 +292,9 @@ export default function CainGMSheet() {
           </div>
           <div style={{ padding: 10 }}>
             <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+              <input value={bgmLabel} onChange={e => setBgmLabel(e.target.value)}
+                placeholder="Song name..."
+                style={{ width: 120, flexShrink: 0, background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.fontSans, fontSize: 9, padding: '3px 6px', color: C.dark }} />
               <input value={bgmUrl} onChange={e => setBgmUrl(e.target.value)}
                 placeholder="YouTube URL..."
                 style={{ flex: 1, background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: '3px 6px', color: C.dark }} />
@@ -260,28 +302,49 @@ export default function CainGMSheet() {
                 const match = bgmUrl.match(/[?&]v=([a-zA-Z0-9_-]{11})|youtu\.be\/([a-zA-Z0-9_-]{11})/);
                 const ytId = match ? (match[1] || match[2]) : (bgmUrl.length === 11 ? bgmUrl : null);
                 if (!ytId) return toast.error('Invalid URL');
-                setBgmQueue(q => [...q, { id: ytId, url: bgmUrl }]); setBgmUrl('');
+                const newQ = [...bgmQueue, { id: ytId, url: bgmUrl, label: bgmLabel || bgmUrl }];
+              setBgmQueue(newQ);
+              savePlaylist(newQ);
+              setBgmUrl(''); setBgmLabel('');
               }} style={{ background: 'transparent', border: `1px solid ${C.border}`, fontFamily: C.fontSans, fontSize: 8, padding: '3px 8px', cursor: 'pointer', color: C.mid }}>+ ADD</button>
               <button onClick={() => {
                 const match = bgmUrl.match(/[?&]v=([a-zA-Z0-9_-]{11})|youtu\.be\/([a-zA-Z0-9_-]{11})/);
                 const ytId = match ? (match[1] || match[2]) : (bgmUrl.length === 11 ? bgmUrl : null);
                 if (!ytId) return toast.error('Invalid URL');
-                if (campaign?.party?.id) { api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: ytId, enabled: true }); handleBgmSync({ enabled: true, trackId: ytId }); setBgmPlaying(ytId); toast.success('▶ Playing'); }
+                if (campaign?.party?.id) {
+                  const newQ = [...bgmQueue, { id: ytId, url: bgmUrl, label: bgmLabel || bgmUrl }];
+                  setBgmQueue(newQ); savePlaylist(newQ); setBgmUrl(''); setBgmLabel('');
+                  api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: ytId, enabled: true });
+                  handleBgmSync({ enabled: true, trackId: ytId });
+                  setBgmPlaying(ytId); toast.success('▶ Playing');
+                }
               }} style={{ background: C.dark, border: 'none', color: '#f2ede3', fontFamily: C.fontSans, fontSize: 8, padding: '3px 10px', cursor: 'pointer' }}>▶ PLAY</button>
               <button onClick={() => {
                 if (campaign?.party?.id) { api.post(`/parties/${campaign.party.id}/bgm-sync`, { enabled: false }); handleBgmSync({ enabled: false }); setBgmPlaying(null); }
               }} style={{ background: 'transparent', border: `1px solid ${C.red}`, color: C.red, fontFamily: C.fontSans, fontSize: 8, padding: '3px 8px', cursor: 'pointer' }}>■ STOP</button>
             </div>
             {bgmQueue.map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: bgmPlaying === item.id ? 'rgba(0,0,0,0.06)' : 'transparent', border: `1px solid ${bgmPlaying === item.id ? C.borderDark : C.border}`, marginBottom: 4 }}>
-                <button onClick={() => {
-                  if (campaign?.party?.id) { api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: item.id, enabled: true }); handleBgmSync({ enabled: true, trackId: item.id }); setBgmPlaying(item.id); }
-                }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: C.font, fontSize: 12, color: bgmPlaying === item.id ? C.dark : C.muted, padding: 0 }}>
+              <div key={i}
+                onClick={() => {
+                  if (campaign?.party?.id) {
+                    api.post(`/parties/${campaign.party.id}/bgm-sync`, { trackId: item.id, enabled: true });
+                    handleBgmSync({ enabled: true, trackId: item.id });
+                    setBgmPlaying(item.id);
+                  }
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', background: bgmPlaying === item.id ? 'rgba(0,0,0,0.08)' : 'transparent', border: `1px solid ${bgmPlaying === item.id ? C.borderDark : C.border}`, marginBottom: 4, cursor: 'pointer' }}>
+                <span style={{ fontFamily: C.font, fontSize: 12, color: bgmPlaying === item.id ? C.dark : C.muted, flexShrink: 0 }}>
                   {bgmPlaying === item.id ? '▶' : '○'}
-                </button>
-                <span style={{ flex: 1, fontFamily: C.font, fontSize: 8, color: C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.url}</span>
-                <button onClick={() => setBgmQueue(q => q.filter((_,j) => j !== i))}
-                  style={{ background: 'transparent', border: 'none', color: C.red, cursor: 'pointer', fontSize: 10, padding: 0 }}>✕</button>
+                </span>
+                <span style={{ flex: 1, fontFamily: C.fontSans, fontSize: 9, color: bgmPlaying === item.id ? C.dark : C.mid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {item.label || item.url}
+                </span>
+                <button onClick={e => {
+                  e.stopPropagation();
+                  const newQ = bgmQueue.filter((_,j) => j !== i);
+                  setBgmQueue(newQ);
+                  savePlaylist(newQ);
+                }} style={{ background: 'transparent', border: 'none', color: C.red, cursor: 'pointer', fontSize: 10, padding: 0, flexShrink: 0 }}>✕</button>
               </div>
             ))}
           </div>

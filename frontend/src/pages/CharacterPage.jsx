@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api.js';
+import { handleBgmSync } from '../components/AudioSettings.jsx';
 import { getSystem } from '../utils/systems.js';
 import DiceRoller from '../components/DiceRoller.jsx';
 import toast from 'react-hot-toast';
 import FontSizeControl from '../components/FontSizeControl.jsx';
+import { DW_CLASSES, getDWClass } from '../utils/dwData.js';
 
 // ── Portrait Crop Modal ─────────────────────────────────────────
 // Preview matches actual display ratio: 130w × 150h
@@ -220,6 +222,186 @@ function XPRow({ level, xp, maxXP, onXPChange, onLevelChange, onLevelUp }) {
   );
 }
 
+// ── DW Class Dropdown ───────────────────────────────────────────
+function DWClassSelect({ value, customName, onChange, onCustomName }) {
+  const [open, setOpen] = useState(false);
+  const selected = DW_CLASSES.find(c => c.id === value);
+  const isCustom = value === 'CUSTOM';
+  const acc = '#c9a84c';
+  const displayLabel = isCustom ? (customName || '✏ Custom') : selected ? selected.name : '— Select Class —';
+  return (
+    <div style={{ position: 'relative' }}>
+      <div onClick={() => setOpen(o => !o)}
+        style={{ fontFamily: 'Cinzel, serif', fontSize: 14, color: (selected || isCustom) ? acc : '#444', borderBottom: `1px solid ${acc}44`, padding: '4px 0', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}>
+        <span>{displayLabel}</span>
+        <span style={{ fontSize: 9, color: '#555' }}>▾</span>
+      </div>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#111', border: `1px solid ${acc}44`, zIndex: 200, maxHeight: 240, overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.5)' }}
+          onMouseLeave={() => setOpen(false)}>
+          {DW_CLASSES.map(c => (
+            <div key={c.id} onClick={() => { onChange(c.id); setOpen(false); }}
+              style={{ fontFamily: 'Cinzel, serif', fontSize: 13, padding: '7px 12px', cursor: 'pointer', color: value === c.id ? acc : '#aaa', background: value === c.id ? 'rgba(201,168,76,0.08)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(201,168,76,0.1)'}
+              onMouseLeave={e => e.currentTarget.style.background = value === c.id ? 'rgba(201,168,76,0.08)' : 'transparent'}
+            >{c.name}</div>
+          ))}
+          {/* Custom option */}
+          <div onClick={() => { onChange('CUSTOM'); setOpen(false); }}
+            style={{ fontFamily: 'Cinzel, serif', fontSize: 13, padding: '7px 12px', cursor: 'pointer', color: isCustom ? acc : '#666', background: isCustom ? 'rgba(201,168,76,0.08)' : 'transparent', borderTop: '1px solid #333', fontStyle: 'italic' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(201,168,76,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = isCustom ? 'rgba(201,168,76,0.08)' : 'transparent'}
+          >✏ Custom</div>
+        </div>
+      )}
+      {isCustom && (
+        <input
+          value={customName || ''}
+          onChange={e => onCustomName(e.target.value)}
+          placeholder="ชื่อ Class (custom)"
+          style={{ width: '100%', marginTop: 4, background: 'transparent', border: 'none', borderBottom: `1px solid ${acc}33`, fontFamily: 'Cinzel, serif', fontSize: 13, color: acc, outline: 'none', padding: '2px 0', boxSizing: 'border-box' }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── DW Advanced Move Popup ───────────────────────────────────────
+function DWMovePopup({ classId, onSelect, onClose }) {
+  const [search, setSearch] = useState('');
+  const [tier, setTier] = useState('all');
+  const cls = getDWClass(classId);
+  if (!cls) return null;
+  const filtered = cls.advancedMoves.filter(m => {
+    const matchTier = tier === 'all' || m.tier === tier;
+    const matchSearch = !search.trim() || m.name.toLowerCase().includes(search.toLowerCase()) || m.description.toLowerCase().includes(search.toLowerCase());
+    return matchTier && matchSearch;
+  });
+  const acc = '#c9a84c';
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}>
+      <div style={{ background: '#111', border: `1px solid ${acc}44`, maxWidth: 560, width: '92%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', borderRadius: 8 }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '14px 18px', borderBottom: `1px solid ${acc}22` }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: 13, color: acc, letterSpacing: '0.1em', marginBottom: 10 }}>{cls.name.toUpperCase()} — ADVANCED MOVES</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            {[['all','All'], ['2-10','Lv 2-10'], ['6-10','Lv 6-10']].map(([v, label]) => (
+              <button key={v} onClick={() => setTier(v)}
+                style={{ background: tier === v ? acc : 'transparent', color: tier === v ? '#000' : '#666', border: `1px solid ${tier === v ? acc : '#333'}`, borderRadius: 4, padding: '3px 10px', fontFamily: 'Cinzel, serif', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em' }}>{label}</button>
+            ))}
+          </div>
+          <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหา move..."
+            style={{ width: '100%', padding: '6px 10px', background: '#1a1a1a', border: '1px solid #333', color: '#ccc', fontFamily: 'Cinzel, serif', fontSize: 12, outline: 'none', borderRadius: 4, boxSizing: 'border-box' }} />
+        </div>
+        <div style={{ overflowY: 'auto', padding: '8px 18px', flex: 1 }}>
+          {filtered.map(m => (
+            <div key={m.name} onClick={() => { onSelect(m.name.toUpperCase() + '\n' + m.description); onClose(); }}
+              style={{ padding: '9px 11px', marginBottom: 6, background: 'rgba(255,255,255,0.02)', border: '1px solid #2a2a2a', borderRadius: 4, cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,168,76,0.07)'; e.currentTarget.style.borderColor = acc + '44'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = '#2a2a2a'; }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: 12, color: acc, marginBottom: 3 }}>{m.name} <span style={{ fontSize: 9, color: '#555', fontFamily: 'Share Tech Mono, monospace' }}>[Lv {m.tier}]</span></div>
+              <div style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: 10, color: '#666', lineHeight: 1.4 }}>{m.description.substring(0, 140)}{m.description.length > 140 ? '…' : ''}</div>
+            </div>
+          ))}
+          {filtered.length === 0 && <div style={{ color: '#444', fontFamily: 'Cinzel, serif', fontSize: 12, padding: '20px 0', textAlign: 'center' }}>No moves found</div>}
+        </div>
+        <div style={{ padding: '8px 18px', borderTop: '1px solid #222' }}>
+          <button onClick={onClose} style={{ background: '#1a1a1a', border: '1px solid #333', color: '#666', borderRadius: 4, padding: '5px 16px', fontFamily: 'Cinzel, serif', fontSize: 10, cursor: 'pointer', letterSpacing: '0.08em' }}>CLOSE</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── DW Spell Popup ──────────────────────────────────────────────
+function DWSpellPopup({ cls, onSelect, onClose }) {
+  const [search, setSearch] = useState('');
+  const [tier, setTier] = useState('all');
+  const spells = cls?.spellList || [];
+  const tiers = [...new Set(spells.map(s => s.tier))];
+  const filtered = spells.filter(s => {
+    const matchTier = tier === 'all' || s.tier === tier;
+    const matchSearch = !search.trim() ||
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.description.toLowerCase().includes(search.toLowerCase()) ||
+      s.tier.toLowerCase().includes(search.toLowerCase());
+    return matchTier && matchSearch;
+  });
+
+  // Group by tier
+  const grouped = {};
+  filtered.forEach(s => {
+    if (!grouped[s.tier]) grouped[s.tier] = [];
+    grouped[s.tier].push(s);
+  });
+
+  const acc = '#c9a84c';
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}>
+      <div style={{ background: '#111', border: `1px solid ${acc}44`, maxWidth: 580, width: '92%', maxHeight: '86vh', display: 'flex', flexDirection: 'column', borderRadius: 8 }}
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ padding: '14px 18px', borderBottom: `1px solid ${acc}22` }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: 13, color: acc, letterSpacing: '0.1em', marginBottom: 10 }}>
+            ✨ {cls?.spellLabel?.toUpperCase() || 'SPELLS'} — เลือก Spell
+          </div>
+          {/* Tier filter buttons */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+            <button onClick={() => setTier('all')}
+              style={{ background: tier === 'all' ? acc : 'transparent', color: tier === 'all' ? '#000' : '#666', border: `1px solid ${tier === 'all' ? acc : '#333'}`, borderRadius: 4, padding: '3px 10px', fontFamily: 'Cinzel, serif', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em' }}>
+              All
+            </button>
+            {tiers.map(t => (
+              <button key={t} onClick={() => setTier(t)}
+                style={{ background: tier === t ? acc : 'transparent', color: tier === t ? '#000' : '#666', border: `1px solid ${tier === t ? acc : '#333'}`, borderRadius: 4, padding: '3px 10px', fontFamily: 'Cinzel, serif', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em' }}>
+                {t}
+              </button>
+            ))}
+          </div>
+          <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="ค้นหา spell..."
+            style={{ width: '100%', padding: '6px 10px', background: '#1a1a1a', border: '1px solid #333', color: '#ccc', fontFamily: 'Cinzel, serif', fontSize: 12, outline: 'none', borderRadius: 4, boxSizing: 'border-box' }} />
+        </div>
+
+        {/* Spell list grouped by tier */}
+        <div style={{ overflowY: 'auto', padding: '8px 18px', flex: 1 }}>
+          {Object.entries(grouped).map(([tierName, tierSpells]) => (
+            <div key={tierName}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#555', marginTop: 12, marginBottom: 6, borderBottom: `1px solid ${acc}22`, paddingBottom: 4 }}>
+                {tierName}
+              </div>
+              {tierSpells.map(s => (
+                <div key={s.name}
+                  onClick={() => { onSelect(s.name.toUpperCase() + '\n' + s.description); onClose(); }}
+                  style={{ padding: '9px 11px', marginBottom: 5, background: 'rgba(255,255,255,0.02)', border: '1px solid #2a2a2a', borderRadius: 4, cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,168,76,0.07)'; e.currentTarget.style.borderColor = acc + '44'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = '#2a2a2a'; }}>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: 12, color: acc, marginBottom: 3 }}>{s.name}</div>
+                  <div style={{ fontFamily: 'Share Tech Mono, monospace', fontSize: 10, color: '#666', lineHeight: 1.4 }}>
+                    {s.description.substring(0, 150)}{s.description.length > 150 ? '…' : ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div style={{ color: '#444', fontFamily: 'Cinzel, serif', fontSize: 12, padding: '20px 0', textAlign: 'center' }}>No spells found</div>
+          )}
+        </div>
+
+        <div style={{ padding: '8px 18px', borderTop: '1px solid #222' }}>
+          <button onClick={onClose}
+            style={{ background: '#1a1a1a', border: '1px solid #333', color: '#666', borderRadius: 4, padding: '5px 16px', fontFamily: 'Cinzel, serif', fontSize: 10, cursor: 'pointer', letterSpacing: '0.08em' }}>
+            CLOSE
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Stat Box ────────────────────────────────────────────────────
 function StatBox({ statKey, label, value, min, max, getModifier, onChange, onRoll }) {
   const mod = getModifier(value);
@@ -258,6 +440,10 @@ export default function CharacterPage() {
   const [rollTrigger, setRollTrigger] = useState(0);
   const [cropSrc, setCropSrc] = useState(null); // portrait crop modal
   const [partyData, setPartyData] = useState(null);
+  const [editingName, setEditingName] = useState(false);
+  const [movePopupOpen, setMovePopupOpen] = useState(false);
+  const [spellPopupOpen, setSpellPopupOpen] = useState(false);
+  const [nameVal, setNameVal] = useState('');
   const sseRef = useRef(null);
   const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'notes'
   const autoSaveTimer = useRef(null);
@@ -290,6 +476,9 @@ export default function CharacterPage() {
     es.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
+        if (data.type === 'bgm_sync') {
+          handleBgmSync(data);
+        }
         if (data.type === 'character_updated') {
           setPartyData(prev => !prev ? prev : {
             ...prev,
@@ -314,7 +503,7 @@ export default function CharacterPage() {
       }
       charRef.current = res.data;
       setCharacter(res.data);
-      const defaults = { level: 1, xp: 0, maxHP: 10, currentHP: 10, maxStamina: 10, currentStamina: 10, maxMana: 10, currentMana: 10, armor: 0, class: '', race: '', moves: '', gear: '', bonds: '', notes: '', portrait: '' };
+      const defaults = { level: 1, xp: 0, maxHP: 10, currentHP: 10, maxStamina: 10, currentStamina: 10, maxMana: 10, currentMana: 10, armor: 0, class: '', race: '', moves: '', advancedMoves: '', gear: '', bonds: '', notes: '', spells: '', portrait: '' };
       const merged = { ...defaults, ...res.data.sheetData };
       sheetRef.current = merged;
       setSheet(merged);
@@ -417,7 +606,25 @@ export default function CharacterPage() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: `1px solid ${acc}33` }}>
           <div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: 24, color: acc }}>{character.name}</div>
+            {editingName ? (
+              <input autoFocus value={nameVal}
+                onChange={e => setNameVal(e.target.value)}
+                onBlur={async () => {
+                  if (nameVal.trim() && nameVal !== character.name) {
+                    await api.put(`/characters/${id}`, { name: nameVal.trim() });
+                    setCharacter(c => ({ ...c, name: nameVal.trim() }));
+                  }
+                  setEditingName(false);
+                }}
+                onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { setEditingName(false); } }}
+                style={{ fontFamily: 'Cinzel, serif', fontSize: 24, color: acc, background: 'transparent', border: 'none', borderBottom: `2px solid ${acc}`, outline: 'none', width: '100%' }} />
+            ) : (
+              <div onClick={() => { setEditingName(true); setNameVal(character.name); }}
+                title="Click to rename"
+                style={{ fontFamily: 'Cinzel, serif', fontSize: 24, color: acc, cursor: 'pointer' }}>
+                {character.name} <span style={{ fontSize: 12, opacity: 0.4 }}>✎</span>
+              </div>
+            )}
             <div style={{ color: '#555', fontSize: 13 }}>{system.name}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -429,7 +636,7 @@ export default function CharacterPage() {
 
         {/* ── Tabs ── */}
         <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: `2px solid ${acc}33` }}>
-          {[['sheet','⚔ Character Sheet'], ['notes','📝 Notes']].map(([key, label]) => (
+          {[['sheet','⚔ Sheet'], ['moves','📜 Moves & Spells'], ['notes','📝 Notes']].map(([key, label]) => (
             <button key={key} onClick={() => setActiveTab(key)}
               style={{ background: 'transparent', border: 'none', borderBottom: activeTab === key ? `2px solid ${acc}` : '2px solid transparent', marginBottom: -2, color: activeTab === key ? acc : '#555', fontFamily: 'Cinzel, serif', fontSize: 12, padding: '8px 20px', cursor: 'pointer', letterSpacing: '0.08em' }}>
               {label}
@@ -445,6 +652,92 @@ export default function CharacterPage() {
               style={{ width: '100%', height: '70vh', resize: 'vertical' }} />
           </div>
         )}
+
+        {/* Moves & Spells Page */}
+        {activeTab === 'moves' && (() => {
+          const cls = getDWClass(sheet.class);
+          const hasSpells = cls?.hasSpells;
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Starting Moves */}
+              <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div className="section-title" style={{ color: acc, marginBottom: 0 }}>⚔ Starting Moves</div>
+                </div>
+                <textarea value={sheet.moves || ''} onChange={e => update('moves', e.target.value)}
+                  rows={14}
+                  placeholder="Starting moves will auto-fill when you select a class..."
+                  style={{ width: '100%', resize: 'vertical', fontFamily: 'Share Tech Mono, monospace', fontSize: 11, lineHeight: 1.6 }} />
+              </div>
+
+              {/* Advanced Moves */}
+              <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div className="section-title" style={{ color: acc, marginBottom: 0 }}>✦ Advanced Moves</div>
+                  {cls && cls.advancedMoves?.length > 0 && (
+                    <button onClick={() => setMovePopupOpen(true)}
+                      style={{ background: '#1a1200', border: `1px solid ${acc}66`, color: acc, borderRadius: 4, padding: '3px 12px', fontFamily: 'Cinzel, serif', fontSize: 10, letterSpacing: '0.08em', cursor: 'pointer' }}>
+                      + ADD MOVE
+                    </button>
+                  )}
+                </div>
+                <textarea value={sheet.advancedMoves || ''} onChange={e => update('advancedMoves', e.target.value)}
+                  rows={8}
+                  placeholder="Advanced moves gained on level up..."
+                  style={{ width: '100%', resize: 'vertical', fontFamily: 'Share Tech Mono, monospace', fontSize: 11, lineHeight: 1.6 }} />
+                {movePopupOpen && cls && (
+                  <DWMovePopup
+                    classId={sheet.class}
+                    onSelect={text => update('advancedMoves', (sheet.advancedMoves ? sheet.advancedMoves + '\n\n' : '') + text)}
+                    onClose={() => setMovePopupOpen(false)}
+                  />
+                )}
+              </div>
+
+              {/* Spells — Wizard/Cleric only */}
+              {hasSpells && (
+                <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div className="section-title" style={{ color: acc, marginBottom: 0 }}>✨ {cls.spellLabel || 'Spells'}</div>
+                    <button onClick={() => setSpellPopupOpen(true)}
+                      style={{ background: '#1a1200', border: `1px solid ${acc}66`, color: acc, borderRadius: 4, padding: '3px 12px', fontFamily: 'Cinzel, serif', fontSize: 10, letterSpacing: '0.08em', cursor: 'pointer' }}>
+                      + ADD SPELL
+                    </button>
+                  </div>
+                  <textarea value={sheet.spells || ''} onChange={e => update('spells', e.target.value)}
+                    rows={14}
+                    placeholder="Spells prepared this session..."
+                    style={{ width: '100%', resize: 'vertical', fontFamily: 'Share Tech Mono, monospace', fontSize: 11, lineHeight: 1.6 }} />
+                  {spellPopupOpen && cls && (
+                    <DWSpellPopup
+                      cls={cls}
+                      onSelect={text => update('spells', (sheet.spells ? sheet.spells + '\n\n' : '') + text)}
+                      onClose={() => setSpellPopupOpen(false)}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Gear */}
+              <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 20 }}>
+                <div className="section-title" style={{ color: acc, marginBottom: 12 }}>🎒 Gear</div>
+                <textarea value={sheet.gear || ''} onChange={e => update('gear', e.target.value)}
+                  rows={6}
+                  placeholder="Starting gear will auto-fill when you select a class..."
+                  style={{ width: '100%', resize: 'vertical', fontFamily: 'Share Tech Mono, monospace', fontSize: 11, lineHeight: 1.6 }} />
+              </div>
+
+              {/* Bonds */}
+              <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 20 }}>
+                <div className="section-title" style={{ color: acc, marginBottom: 12 }}>🤝 Bonds</div>
+                <textarea value={sheet.bonds || ''} onChange={e => update('bonds', e.target.value)}
+                  rows={5}
+                  placeholder="Bonds with your companions..."
+                  style={{ width: '100%', resize: 'vertical', fontFamily: 'Share Tech Mono, monospace', fontSize: 11, lineHeight: 1.6 }} />
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Character Sheet */}
         {activeTab === 'sheet' && (<>
@@ -473,9 +766,25 @@ export default function CharacterPage() {
 
                 {/* Class / Race / XP */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    <div><label>Class</label><input value={sheet.class || ''} onChange={e => update('class', e.target.value)} placeholder="e.g. Fighter" /></div>
-                    <div><label>Race</label><input value={sheet.race || ''} onChange={e => update('race', e.target.value)} placeholder="e.g. Elf" /></div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div>
+                      <label>Class</label>
+                      <DWClassSelect
+                        value={sheet.class || ''}
+                        customName={sheet.classCustomName || ''}
+                        onCustomName={v => update('classCustomName', v)}
+                        onChange={classId => {
+                          update('class', classId);
+                          if (classId !== 'CUSTOM') {
+                            const cls = getDWClass(classId);
+                            if (cls) {
+                              update('moves', cls.startingMoves);
+                              update('gear', cls.gear);
+                            }
+                          }
+                        }} />
+                    </div>
+                    <div><label>Race</label><input value={sheet.race || ''} onChange={e => update('race', e.target.value)} placeholder="e.g. Elf, Human, Dwarf" /></div>
                   </div>
                   <XPRow level={sheet.level || 1} xp={sheet.xp || 0} maxXP={maxXP}
                     onXPChange={v => update('xp', Math.max(0, v))}
@@ -517,13 +826,15 @@ export default function CharacterPage() {
                 onChangeCurrent={v => update('currentMana', v)} onChangeMax={v => update('maxMana', v)} />
             </div>
 
-            {/* Details */}
+            {/* Details — quick Bonds summary only; full content in Moves tab */}
             <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 20 }}>
-              <div className="section-title" style={{ color: acc }}>📜 Details</div>
+              <div className="section-title" style={{ color: acc }}>📜 Quick Notes</div>
+              <div style={{ fontSize: 11, color: '#555', fontFamily: 'Cinzel, serif', marginBottom: 10, letterSpacing: '0.06em' }}>
+                Full moves, spells & gear are in the <span style={{ color: acc, cursor: 'pointer' }} onClick={() => setActiveTab('moves')}>📜 Moves & Spells</span> tab
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {[{ key: 'moves', label: 'Moves', rows: 4 }, { key: 'gear', label: 'Gear', rows: 3 }, { key: 'bonds', label: 'Bonds', rows: 3 }, { key: 'notes', label: 'Notes', rows: 3 }].map(f => (
-                  <div key={f.key}><label>{f.label}</label><textarea value={sheet[f.key] || ''} onChange={e => update(f.key, e.target.value)} rows={f.rows} /></div>
-                ))}
+                <div><label>Bonds</label><textarea value={sheet.bonds || ''} onChange={e => update('bonds', e.target.value)} rows={3} /></div>
+                <div><label>Notes</label><textarea value={sheet.notes || ''} onChange={e => update('notes', e.target.value)} rows={3} /></div>
               </div>
             </div>
           </div>
@@ -531,7 +842,11 @@ export default function CharacterPage() {
           {/* RIGHT sticky */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* Party mini panel */}
+              <DiceRoller system={character.system} stats={sheet} getModifier={system.getModifier}
+                externalExpr={diceExpr} rollTrigger={rollTrigger} characterName={character.name} />
+
+
+{/* Party mini panel */}
               {partyData && (
                 <div className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -590,8 +905,8 @@ export default function CharacterPage() {
                   </div>
                 </div>
               )}
-              <DiceRoller system={character.system} stats={sheet} getModifier={system.getModifier}
-                externalExpr={diceExpr} rollTrigger={rollTrigger} characterName={character.name} />
+
+              
 
             </div>
           </div>

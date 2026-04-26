@@ -72,9 +72,13 @@ router.delete('/:partyId/members/:userId', async (req, res) => {
 router.put('/:id/inventory', async (req, res) => {
   const { inventory } = req.body;
   try {
-    const party = await prisma.party.update({
+    await prisma.party.update({
       where: { id: req.params.id },
       data: { inventory: inventory || '' }
+    });
+    pushPartyUpdate(req.params.id, {
+      type: 'inventory_updated',
+      inventory: inventory || ''
     });
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Server error' }); }

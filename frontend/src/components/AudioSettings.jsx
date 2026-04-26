@@ -15,8 +15,10 @@ const DEFAULTS = {
   criticalSound: true,
   diceSound: true,
   bgmEnabled: false,
-  bgmTrackId: null, // stores youtubeId of selected track
+  bgmTrackId: null,
   bgmVolume: 50,
+  bgmSyncEnabled: true,
+  bgmDirectId: null,
 };
 
 function loadSettings() {
@@ -40,6 +42,7 @@ export function handleBgmSync(data) {
   } else if (data.enabled === false) {
     setAudioSetting('bgmEnabled', false);
     setAudioSetting('bgmDirectId', null);
+    setAudioSetting('bgmTrackId', null);
   }
 }
 export function setAudioSetting(key, value) {
@@ -60,35 +63,33 @@ function YoutubeBGM({ trackId, volume, playing }) {
   const readyRef = useRef(false);
 
   useEffect(() => {
-    // Load YouTube IFrame API
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.head.appendChild(tag);
-    }
+    if (!trackId) return;
 
     const initPlayer = () => {
       if (!iframeRef.current) return;
       playerRef.current = new window.YT.Player(iframeRef.current, {
         videoId: trackId,
-        playerVars: { autoplay: 0, controls: 0, loop: 1, playlist: trackId },
+        playerVars: { autoplay: 1, controls: 0, loop: 1, playlist: trackId, mute: 0 },
         events: {
           onReady: (e) => {
             readyRef.current = true;
+            e.target.unMute();
             e.target.setVolume(volume);
             if (playing) e.target.playVideo();
           },
           onStateChange: (e) => {
-            // Loop: restart when ended
-            if (e.data === window.YT.PlayerState.ENDED) {
-              e.target.playVideo();
-            }
+            if (e.data === window.YT.PlayerState.ENDED) e.target.playVideo();
           }
         }
       });
     };
 
-    if (window.YT?.Player) {
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+      window.onYouTubeIframeAPIReady = initPlayer;
+    } else if (window.YT.Player) {
       initPlayer();
     } else {
       window.onYouTubeIframeAPIReady = initPlayer;
@@ -107,8 +108,13 @@ function YoutubeBGM({ trackId, volume, playing }) {
 
   useEffect(() => {
     if (!readyRef.current || !playerRef.current) return;
-    if (playing) playerRef.current.playVideo();
-    else playerRef.current.pauseVideo();
+    if (playing) {
+      playerRef.current.unMute();
+      playerRef.current.setVolume(volume);
+      playerRef.current.playVideo();
+    } else {
+      playerRef.current.pauseVideo();
+    }
   }, [playing]);
 
   return (
@@ -144,7 +150,7 @@ export default function AudioSettings() {
   useEffect(() => {
     api.get('/bgm').then(res => {
       if (res.data?.length > 0) {
-        setTracks(res.data);
+        setTracks(Array.isArray(res.data) ? res.data : FALLBACK_TRACKS);
         // Auto-select first track if none selected
         if (!_settings.bgmTrackId) {
           setAudioSetting('bgmTrackId', res.data[0].youtubeId);
@@ -235,7 +241,7 @@ export default function AudioSettings() {
                 <div style={{ fontSize: 9, color: '#555', marginBottom: 4, fontFamily: 'Cinzel, serif' }}>Track:</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   {tracks.map((t) => (
-                    <button key={t.youtubeId} onClick={() => set('bgmTrackId', t.youtubeId)}
+                    <button key={t.youtubeId} onClick={() => { set('bgmDirectId', null); set('bgmTrackId', t.youtubeId); }}
                       style={{ textAlign: 'left', padding: '4px 8px', background: s.bgmTrackId === t.youtubeId ? '#1a1208' : 'transparent', border: `1px solid ${s.bgmTrackId === t.youtubeId ? '#c9a84c' : '#2a2a2a'}`, color: s.bgmTrackId === t.youtubeId ? '#c9a84c' : '#666', fontFamily: 'Cinzel, serif', fontSize: 9, cursor: 'pointer', borderRadius: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontSize: 8 }}>{s.bgmTrackId === t.youtubeId ? '▶' : '○'}</span>
                       {t.label}

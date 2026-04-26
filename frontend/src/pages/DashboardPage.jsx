@@ -109,8 +109,8 @@ export default function DashboardPage() {
   const fetchAll = async () => {
     try {
       const [charRes, partyRes] = await Promise.all([api.get('/characters'), api.get('/parties/mine')]);
-      setCharacters(charRes.data);
-      setMyParties(partyRes.data);
+      setCharacters(Array.isArray(charRes.data) ? charRes.data : []);
+      setMyParties(Array.isArray(partyRes.data) ? partyRes.data : []);
       if (user?.role === 'GM' || user?.role === 'ADMIN') {
         const campRes = await api.get('/campaigns');
         setCampaigns(campRes.data);
@@ -253,8 +253,39 @@ export default function DashboardPage() {
                       title="Double-click to rename"
                       style={{ fontFamily: 'Cinzel, serif', fontSize: 17, color: acc, marginBottom: 2, textShadow: '0 2px 8px rgba(0,0,0,0.8)', cursor: 'text' }}>{char.name} <span style={{ fontSize: 9, opacity: 0.4 }}>✎</span></div>
                   )}
-                  <div style={{ color: '#888', fontSize: 12, textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>{char.sheetData?.class || '—'} · Lv.{char.sheetData?.level || 1}</div>
-                  {char.sheetData?.currentHP !== undefined && (
+                  <div style={{ color: '#888', fontSize: 12, textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>{char.system === 'CAIN'
+                        ? `CAT ${['I','II','III','IV','V'][(char.sheetData?.cat || 1) - 1] || 'I'}`
+                        : `${char.sheetData?.class || '—'} · Lv.${char.sheetData?.level || 1}`
+                      }</div>
+                  {char.system === 'CAIN' ? (
+                    <div style={{ marginTop: 8 }}>
+                      {(() => {
+                        const sd = char.sheetData || {};
+                        const inj = sd.injuries || 0;
+                        const eMax = sd.resilientAgenda ? 6 : Math.max(1, 6 - inj);
+                        const str = sd.stress || 0;
+                        return (
+                          <>
+                            <div style={{ display: 'flex', gap: 1, marginBottom: 3 }}>
+                              {Array.from({ length: eMax }, (_, i) => (
+                                <div key={i} style={{ flex: 1, height: 5, background: i < str ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.2)', borderRadius: 1 }} />
+                              ))}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ fontSize: 9, color: '#aaa', textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>EXEC {eMax - str}/{eMax}</div>
+                              {inj > 0 && (
+                                <div style={{ display: 'flex', gap: 2 }}>
+                                  {Array.from({ length: 5 }, (_, i) => (
+                                    <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < inj ? '#f87171' : 'rgba(255,255,255,0.2)' }} />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : char.sheetData?.currentHP !== undefined && (
                     <div style={{ marginTop: 10 }}>
                       <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: 4, height: 5, overflow: 'hidden' }}>
                         <div style={{ height: '100%', background: '#4ade80', borderRadius: 4, width: `${Math.max(0, Math.min(100, (char.sheetData.currentHP / (char.sheetData.maxHP || 1)) * 100))}%`, transition: 'width 0.3s' }} />

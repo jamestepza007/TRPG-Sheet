@@ -21,6 +21,9 @@ router.post('/roll', authenticate, async (req, res) => {
         expression,
         result: parseInt(result),
         details: details || {},
+        characterName: characterName || null,
+        min: min !== undefined ? parseInt(min) : null,
+        max: max !== undefined ? parseInt(max) : null,
         sentToDiscord: false,
       }
     });
@@ -77,8 +80,6 @@ router.get('/history', async (req, res) => {
   }
 });
 
-export default router;
-
 // GET /api/dice/recent?since=timestamp
 // Public-ish endpoint for Owlbear Extension to poll
 // Returns rolls newer than ?since (unix ms)
@@ -87,8 +88,9 @@ router.get('/recent', async (req, res) => {
   try {
     const since = parseInt(req.query.since) || (Date.now() - 10000);
     const sinceDate = new Date(since);
+    const campaignFilter = req.query.campaignId ? { campaignId: req.query.campaignId } : {};
     const rolls = await prisma.diceLog.findMany({
-      where: { createdAt: { gt: sinceDate } },
+      where: { createdAt: { gt: sinceDate }, ...campaignFilter },
       orderBy: { createdAt: 'asc' },
       take: 20,
     });
@@ -108,6 +110,7 @@ router.get('/recent', async (req, res) => {
       username: userMap[r.userId] || null,
       min: r.min,
       max: r.max,
+      details: r.details,
       timestamp: r.createdAt.getTime(),
     })));
   } catch (err) {
@@ -115,3 +118,6 @@ router.get('/recent', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+export default router;
+

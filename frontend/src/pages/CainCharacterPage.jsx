@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api.js';
+import { handleBgmSync } from '../components/AudioSettings.jsx';
 import { getSystem } from '../utils/systems.js';
 import CainDiceRoller from '../components/CainDiceRoller.jsx';
 import toast from 'react-hot-toast';
 import FontSizeControl from '../components/FontSizeControl.jsx';
+import { AGENDAS, BLASPHEMIES, getAllBlasphemyPowers } from '../utils/cainData.js';
 
 // ── CAIN style tokens ────────────────────────────────────────────
 const C = {
@@ -256,6 +258,155 @@ function PortraitModal({ imageUrl, onConfirm, onCancel }) {
   );
 }
 
+
+// ── Agenda Dropdown ──────────────────────────────────────────────
+function AgendaSelect({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const selected = AGENDAS.find(a => a.id === value);
+  return (
+    <div style={{ position: 'relative' }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{ fontFamily: "'Courier New', monospace", fontSize: 13, color: '#1a1a1a', borderBottom: '1px solid #999', padding: '2px 0', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}
+      >
+        <span style={{ color: selected ? '#1a1a1a' : '#888' }}>{selected ? selected.name : '— เลือก Agenda —'}</span>
+        <span style={{ fontSize: 8, color: '#888' }}>▾</span>
+      </div>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#f2ede3', border: '1px solid #444', zIndex: 200, maxHeight: 220, overflowY: 'auto', boxShadow: '2px 2px 8px rgba(0,0,0,0.18)' }}
+          onMouseLeave={() => setOpen(false)}>
+          {AGENDAS.map(a => (
+            <div key={a.id}
+              onClick={() => { onChange(a.id); setOpen(false); }}
+              style={{ fontFamily: "'Courier New', monospace", fontSize: 12, padding: '5px 8px', cursor: 'pointer', background: value === a.id ? 'rgba(0,0,0,0.1)' : 'transparent', borderBottom: '1px solid rgba(0,0,0,0.06)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.08)'}
+              onMouseLeave={e => e.currentTarget.style.background = value === a.id ? 'rgba(0,0,0,0.1)' : 'transparent'}
+            >{a.name}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Blasphemy Dropdown ───────────────────────────────────────────
+function BlasphemySelect({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const selected = BLASPHEMIES.find(b => b.id === value);
+  return (
+    <div style={{ position: 'relative' }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{ fontFamily: "'Courier New', monospace", fontSize: 13, color: '#1a1a1a', borderBottom: '1px solid #999', padding: '2px 0', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}
+      >
+        <span style={{ color: selected ? '#1a1a1a' : '#888' }}>{selected ? selected.name : '— เลือก Blasphemy —'}</span>
+        <span style={{ fontSize: 8, color: '#888' }}>▾</span>
+      </div>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#f2ede3', border: '1px solid #444', zIndex: 200, maxHeight: 220, overflowY: 'auto', boxShadow: '2px 2px 8px rgba(0,0,0,0.18)' }}
+          onMouseLeave={() => setOpen(false)}>
+          {BLASPHEMIES.map(b => (
+            <div key={b.id}
+              onClick={() => { onChange(b.id); setOpen(false); }}
+              style={{ fontFamily: "'Courier New', monospace", fontSize: 12, padding: '5px 8px', cursor: 'pointer', background: value === b.id ? 'rgba(0,0,0,0.1)' : 'transparent', borderBottom: '1px solid rgba(0,0,0,0.06)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.08)'}
+              onMouseLeave={e => e.currentTarget.style.background = value === b.id ? 'rgba(0,0,0,0.1)' : 'transparent'}
+            >{b.name}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Agenda Ability Popup ─────────────────────────────────────────
+function AgendaAbilityPopup({ agendaId, onSelect, onClose }) {
+  const agenda = AGENDAS.find(a => a.id === agendaId);
+  if (!agenda || agenda.abilities.length === 0) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}>
+      <div style={{ background: '#f2ede3', border: '2px solid #1a1a1a', maxWidth: 480, width: '90%', maxHeight: '80vh', overflowY: 'auto', padding: 16 }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12, borderBottom: '2px solid #1a1a1a', paddingBottom: 6 }}>
+          {agenda.name} — AGENDA ABILITIES
+        </div>
+        {agenda.abilities.map(ab => (
+          <div key={ab.name}
+            onClick={() => { onSelect(ab.name.toUpperCase() + '\n' + ab.description); onClose(); }}
+            style={{ padding: '8px 10px', marginBottom: 6, background: 'rgba(0,0,0,0.04)', border: '1px solid #aaa', cursor: 'pointer' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.12)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}>
+            <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 3 }}>{ab.name}</div>
+            <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: '#444', lineHeight: 1.4 }}>{ab.description}</div>
+          </div>
+        ))}
+        <button onClick={onClose} style={{ marginTop: 8, padding: '4px 14px', background: '#1a1a1a', color: '#f2ede3', border: 'none', fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, letterSpacing: '0.1em', cursor: 'pointer' }}>CLOSE</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Observed Power Popup ─────────────────────────────────────────
+function ObservedPowerPopup({ onSelect, onClose }) {
+  const [search, setSearch] = useState('');
+  const allPowers = getAllBlasphemyPowers();
+  const filtered = search.trim()
+    ? allPowers.filter(p =>
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.blasphemy.toLowerCase().includes(search.toLowerCase())
+      )
+    : allPowers;
+
+  const grouped = {};
+  filtered.forEach(p => {
+    if (!grouped[p.blasphemy]) grouped[p.blasphemy] = [];
+    grouped[p.blasphemy].push(p);
+  });
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}>
+      <div style={{ background: '#f2ede3', border: '2px solid #1a1a1a', maxWidth: 520, width: '90%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '12px 16px', borderBottom: '2px solid #1a1a1a' }}>
+          <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 8 }}>OBSERVED POWERS — เลือก Power</div>
+          <input
+            autoFocus
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="ค้นหา power หรือ blasphemy..."
+            style={{ width: '100%', padding: '6px 8px', border: '1px solid #999', background: '#fff', fontFamily: "'Courier New', monospace", fontSize: 11, outline: 'none', boxSizing: 'border-box' }}
+          />
+        </div>
+        <div style={{ overflowY: 'auto', padding: '8px 16px', flex: 1 }}>
+          {Object.entries(grouped).map(([blasphemyName, powers]) => (
+            <div key={blasphemyName}>
+              <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#888', marginTop: 10, marginBottom: 4, borderBottom: '1px solid #ccc', paddingBottom: 2 }}>{blasphemyName}</div>
+              {powers.map(p => (
+                <div key={p.name}
+                  onClick={() => { onSelect(p.name.toUpperCase() + '\n' + p.description); onClose(); }}
+                  style={{ padding: '6px 8px', marginBottom: 4, background: 'rgba(0,0,0,0.03)', border: '1px solid #bbb', cursor: 'pointer' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}>
+                  <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{p.name}</div>
+                  <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: '#555', lineHeight: 1.3, marginTop: 2 }}>{p.description.substring(0, 120)}{p.description.length > 120 ? '...' : ''}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+          {Object.keys(grouped).length === 0 && (
+            <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: '#888', padding: '20px 0', textAlign: 'center' }}>ไม่พบ power ที่ตรงกัน</div>
+          )}
+        </div>
+        <div style={{ padding: '8px 16px', borderTop: '1px solid #ccc' }}>
+          <button onClick={onClose} style={{ padding: '4px 14px', background: '#1a1a1a', color: '#f2ede3', border: 'none', fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, letterSpacing: '0.1em', cursor: 'pointer' }}>CLOSE</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ────────────────────────────────────────────────────
 export default function CainCharacterPage() {
   const { id } = useParams();
@@ -263,6 +414,8 @@ export default function CainCharacterPage() {
   const [character, setCharacter] = useState(null);
   const [sheet, setSheet] = useState({});
   const [saveStatus, setSaveStatus] = useState('saved');
+  const [agendaAbilityPopup, setAgendaAbilityPopup] = useState(false);
+  const [observedPowerPopup, setObservedPowerPopup] = useState(null); // null or index 0-4
   const [cropSrc, setCropSrc] = useState(null);
   const [partyData, setPartyData] = useState(null);
   const sseRef = useRef(null);
@@ -293,6 +446,9 @@ export default function CainCharacterPage() {
         es.onmessage = (e) => {
           try {
             const data = JSON.parse(e.data);
+            if (data.type === 'bgm_sync') {
+              handleBgmSync(data);
+            }
             if (data.type === 'character_updated') {
               setPartyData(prev => !prev ? prev : {
                 ...prev,
@@ -445,13 +601,79 @@ export default function CainCharacterPage() {
 
               {/* Identity fields */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[['NAME', 'name'], ['XID', 'xid'], ['AGND', 'agnd'], ['BLSPH', 'blsph']].map(([lbl, key]) => (
+                {[['NAME', 'name'], ['XID', 'xid']].map(([lbl, key]) => (
                   <div key={key}>
                     <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', color: C.mid }}>{lbl}:</div>
-                    <input value={sheet[key] || ''} onChange={e => update(key, e.target.value)}
+                    <input
+                      value={key === 'name' ? character.name : (sheet[key] || '')}
+                      onChange={e => {
+                        if (key === 'name') {
+                          setCharacter(c => ({ ...c, name: e.target.value }));
+                          update('name', e.target.value);
+                        } else {
+                          update(key, e.target.value);
+                        }
+                      }}
+                      onBlur={async e => {
+                        if (key === 'name' && e.target.value.trim()) {
+                          await api.put(`/characters/${id}`, { name: e.target.value.trim() });
+                        }
+                      }}
                       style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 13, color: C.dark, outline: 'none', padding: '2px 0' }} />
                   </div>
                 ))}
+                {/* AGND Dropdown */}
+                <div>
+                  <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', color: C.mid }}>AGND:</div>
+                  <AgendaSelect
+                    value={sheet.agnd || ''}
+                    onChange={agndId => {
+                      update('agnd', agndId);
+                      if (agndId && agndId !== 'CUSTOM') {
+                        const agenda = AGENDAS.find(a => a.id === agndId);
+                        if (agenda) {
+                          update('agendaItems', agenda.items);
+                        }
+                      } else if (agndId === 'CUSTOM') {
+                        update('agendaItems', '');
+                      }
+                    }}
+                  />
+                  {sheet.agnd === 'CUSTOM' && (
+                    <input
+                      value={sheet.agndCustom || ''}
+                      onChange={e => update('agndCustom', e.target.value)}
+                      placeholder="ชื่อ Agenda (custom)"
+                      style={{ width: '100%', marginTop: 3, background: 'transparent', border: 'none', borderBottom: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 12, color: C.dark, outline: 'none', padding: '1px 0', boxSizing: 'border-box' }}
+                    />
+                  )}
+                </div>
+                {/* BLSPH Dropdown */}
+                <div>
+                  <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', color: C.mid }}>BLSPH:</div>
+                  <BlasphemySelect
+                    value={sheet.blsph || ''}
+                    onChange={blsphId => {
+                      update('blsph', blsphId);
+                      if (blsphId && blsphId !== 'CUSTOM') {
+                        const b = BLASPHEMIES.find(x => x.id === blsphId);
+                        if (b && b.passive) {
+                          update('blasphemyPassive', b.passive.name + ': ' + b.passive.description);
+                        }
+                      } else if (blsphId === 'CUSTOM') {
+                        update('blasphemyPassive', '');
+                      }
+                    }}
+                  />
+                  {sheet.blsph === 'CUSTOM' && (
+                    <input
+                      value={sheet.blsphCustom || ''}
+                      onChange={e => update('blsphCustom', e.target.value)}
+                      placeholder="ชื่อ Blasphemy (custom)"
+                      style={{ width: '100%', marginTop: 3, background: 'transparent', border: 'none', borderBottom: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 12, color: C.dark, outline: 'none', padding: '1px 0', boxSizing: 'border-box' }}
+                    />
+                  )}
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {[['SX', 'sx'], ['HT', 'ht'], ['WT', 'wt'], ['HAIR', 'hair'], ['EYES', 'eyes']].map(([lbl, key]) => (
                     <div key={key}>
@@ -678,27 +900,58 @@ export default function CainCharacterPage() {
 
           <SectionBox title="REGISTERED ABILITIES — AGENDA">
             <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>Describe registered agenda here. Swap agendas between missions. Keep any bolded items.</div>
-            <textarea value={sheet.agendaDescription || ''} onChange={e => update('agendaDescription', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
-            <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginBottom: 4 }}>AGENDA ITEMS:</div>
-            <textarea value={sheet.agendaItems || ''} onChange={e => update('agendaItems', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
-            <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginTop: 8, marginBottom: 4 }}>AGENDA ABILITIES (spend advance, 5 max):</div>
-            <textarea value={sheet.agendaAbilities || ''} onChange={e => update('agendaAbilities', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
+            <textarea value={sheet.agendaDescription || ''} onChange={e => update('agendaDescription', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4, boxSizing: 'border-box' }} />
+            <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginBottom: 4, marginTop: 8 }}>AGENDA ITEMS:</div>
+            <textarea value={sheet.agendaItems || ''} onChange={e => update('agendaItems', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4, boxSizing: 'border-box' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, marginBottom: 4 }}>
+              <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid }}>AGENDA ABILITIES (spend advance, 5 max):</div>
+              {sheet.agnd && sheet.agnd !== 'CUSTOM' && (
+                <button
+                  onClick={() => setAgendaAbilityPopup(true)}
+                  style={{ background: C.dark, color: C.bg, border: 'none', borderRadius: 0, padding: '1px 7px', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer', flexShrink: 0 }}
+                  title="เลือก Agenda Ability">+ ADD</button>
+              )}
+            </div>
+            <textarea value={sheet.agendaAbilities || ''} onChange={e => update('agendaAbilities', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4, boxSizing: 'border-box' }} />
+            {agendaAbilityPopup && (
+              <AgendaAbilityPopup
+                agendaId={sheet.agnd}
+                onSelect={text => update('agendaAbilities', (sheet.agendaAbilities ? sheet.agendaAbilities + '\n\n' : '') + text)}
+                onClose={() => setAgendaAbilityPopup(false)}
+              />
+            )}
           </SectionBox>
 
           <div>
             <SectionBox title="BLASPHEMY">
               <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>Describe registered psychic phenomena. Keep sticker attached at all times.</div>
-              <textarea value={sheet.blasphemyDescription || ''} onChange={e => update('blasphemyDescription', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
-              <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, color: C.mid, marginBottom: 4 }}>PASSIVE:</div>
-              <textarea value={sheet.blasphemyPassive || ''} onChange={e => update('blasphemyPassive', e.target.value)} rows={3} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
+              <textarea value={sheet.blasphemyDescription || ''} onChange={e => update('blasphemyDescription', e.target.value)} rows={4} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4, boxSizing: 'border-box' }} />
+              <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, color: C.mid, marginBottom: 4, marginTop: 8 }}>PASSIVE:</div>
+              <textarea value={sheet.blasphemyPassive || ''} onChange={e => update('blasphemyPassive', e.target.value)} rows={3} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4, boxSizing: 'border-box' }} />
               <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, color: C.mid, marginTop: 8, marginBottom: 4 }}>OBSERVED POWERS (spend advance for each):</div>
               {(sheet.observedPowers || ['', '', '', '', '']).map((p, i) => (
                 <div key={i} style={{ marginBottom: 6 }}>
-                  <div style={{ fontFamily: C.fontSans, fontSize: 7, color: C.muted, borderLeft: `3px solid ${C.border}`, paddingLeft: 6 }}>OBSERVED POWER {i + 1}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                    <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, color: C.mid, borderLeft: `3px solid ${C.borderDark}`, paddingLeft: 6, letterSpacing: '0.1em' }}>OBSERVED POWER {i + 1}</div>
+                    <button
+                      onClick={() => setObservedPowerPopup(i)}
+                      style={{ background: C.dark, color: C.bg, border: 'none', borderRadius: 0, padding: '1px 7px', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer', flexShrink: 0 }}
+                      title="เลือก Observed Power">+ ADD</button>
+                  </div>
                   <textarea value={p} rows={2} onChange={e => { const ops = [...(sheet.observedPowers || ['', '', '', '', ''])]; ops[i] = e.target.value; update('observedPowers', ops); }}
-                    style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 4, marginTop: 2 }} />
+                    style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, padding: 4, marginTop: 0, boxSizing: 'border-box' }} />
                 </div>
               ))}
+              {observedPowerPopup !== null && (
+                <ObservedPowerPopup
+                  onSelect={text => {
+                    const ops = [...(sheet.observedPowers || ['', '', '', '', ''])];
+                    ops[observedPowerPopup] = text;
+                    update('observedPowers', ops);
+                  }}
+                  onClose={() => setObservedPowerPopup(null)}
+                />
+              )}
             </SectionBox>
           </div>
         </div>
@@ -760,7 +1013,7 @@ export default function CainCharacterPage() {
           <div style={{ border: `1px solid ${C.borderDark}` }}>
             <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>DICE ROLLER</div>
             <div style={{ padding: '10px' }}>
-              <CainDiceRoller sheet={sheet} system="CAIN" characterName={character.name} />
+              <CainDiceRoller sheet={sheet} system="CAIN" characterName={character.name} campaignId={partyData?.campaign?.id || null} />
             </div>
           </div>
         </div>

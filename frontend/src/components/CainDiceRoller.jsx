@@ -28,7 +28,7 @@ function rollD6Pool(count) {
   return Array.from({ length: count }, () => Math.floor(Math.random() * 6) + 1);
 }
 
-export default function CainDiceRoller({ sheet, system, characterName }) {
+export default function CainDiceRoller({ sheet, system, characterName, campaignId }) {
   const { user } = useAuthStore();
   const [baseDice, setBaseDice] = useState(1);
   const [bonusDice, setBonusDice] = useState(0);
@@ -93,6 +93,18 @@ export default function CainDiceRoller({ sheet, system, characterName }) {
 
     setResult(res);
     setRolling(false);
+
+    // Save to dice log for Owlbear
+    api.post('/dice/roll', {
+      expression: `[${pool.join(', ')}]`,
+      result: Math.max(...pool),
+      system: 'CAIN',
+      characterName: characterName || null,
+      campaignId: campaignId || null,
+      min: 1,
+      max: 6,
+      details: res,
+    }).catch(() => {});
 
     // Discord
     if (sendToDiscord && selectedWebhook) {
