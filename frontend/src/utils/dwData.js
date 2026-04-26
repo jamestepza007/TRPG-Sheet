@@ -242,6 +242,7 @@ Choose one:
       { tier: '3rd Level', name: 'Cure Moderate Wounds', description: 'You staunch bleeding and set bones through magic. Heal an ally you touch of 2d8 damage.' },
       { tier: '3rd Level', name: 'Darkness', description: "(ongoing) Choose an area you can see: it's filled with supernatural darkness and shadow. While this spell is ongoing you take -1 to cast a spell." },
       { tier: '3rd Level', name: 'Hold Person', description: 'Choose a person you can see. Until you cast a spell or leave their presence they cannot act except to speak. This effect ends immediately if the target takes damage from any source.' },
+<<<<<<< HEAD
       { tier: '5th Level', name: 'Revelation', description: 'Your deity answers your prayers with a moment of perfect understanding. The GM will shed light on the current situation. When acting on the information, you take +1 forward.' },
       { tier: '5th Level', name: 'Cure Critical Wounds', description: 'Cure Critical Wounds: Heal an ally you touch of 3d8 damage.' },
       { tier: '5th Level', name: 'Divination', description: 'Name a person, place, or thing you want to learn about. Your deity grants you visions of the target, as clear as if you were there.' },
@@ -260,6 +261,8 @@ Choose one:
       { tier: '9th Level', name: 'Consume Unlife', description: 'The mindless undead creature you touch is destroyed and you steal its death energy to heal yourself or the next ally you touch. The amount of damage healed is equal to the HP that the creature had remaining before you destroyed it.' },
       { tier: '9th Level', name: 'Plague', description: "(ongoing) Name a city, town, encampment, or other place where people live. As long as this spell is active that place is beset by a plague appropriate to your deity's domains (locusts, death of the first born, etc.) While this spell is ongoing you take -1 to cast a spell." },
       { tier: '9th Level', name: 'Divine Presence', description: '(ongoing) Every creature must ask your leave to enter your presence, and you must give permission aloud for them to enter. Any creature without your leave takes an extra 1d10 damage whenever they take damage in your presence. While this spell is ongoing you take -1 to cast a spell.' },
+=======
+>>>>>>> 6825f91c48cd7d871b88320950dd2521a6e2d07e
     ],
   },
 
@@ -749,7 +752,11 @@ Choose one:
       { tier: '1st Level', name: 'Detect Magic', description: '(Divination) One of your senses is briefly attuned to magic. The GM will tell you what here is magical.' },
       { tier: '1st Level', name: 'Magic Missile', description: '(Evocation) Projectiles of pure magic spring from your fingers. Deal 2d4 damage to one target.' },
       { tier: '1st Level', name: 'Charm Person', description: '(Enchantment, ongoing) The person (not beast or monster) you touch while casting this spell counts you as a friend until they take damage or you prove otherwise. While the spell is ongoing you take -1 to cast a spell.' },
+<<<<<<< HEAD
       { tier: '1st Level', name: 'Invisibility', description: "(Illusion, ongoing) Touch an ally: nobody can see them. They're invisible! The spell persists until the target attacks or you dismiss the effect. While the spell is ongoing you cannot cast a spell." },
+=======
+      { tier: '1st Level', name: 'Invisibility', description: '(Illusion, ongoing) Touch an ally: nobody can see them. They're invisible! The spell persists until the target attacks or you dismiss the effect. While the spell is ongoing you cannot cast a spell.' },
+>>>>>>> 6825f91c48cd7d871b88320950dd2521a6e2d07e
       { tier: '1st Level', name: 'Telepathy', description: '(Divination, ongoing) You form a telepathic bond with a single person you touch, enabling you to converse with that person through your thoughts. You can only have one telepathic bond at a time.' },
       { tier: '1st Level', name: 'Alarm', description: 'Walk a wide circle as you cast this spell. Until you prepare spells again your magic will alert you if a creature crosses that circle. Even if you are asleep, the spell will shake you from your slumber.' },
       { tier: '3rd Level', name: 'Dispel Magic', description: 'Choose a spell or magic effect in your presence: this spell rips it apart. Lesser spells are ended, powerful magic is just reduced or dampened so long as you are nearby.' },
@@ -758,6 +765,7 @@ Choose one:
       { tier: '3rd Level', name: 'Mimic', description: '(ongoing) You take the form of someone you touch while casting this spell. Your physical characteristics match theirs exactly but your behavior may not. This change persists until you take damage or choose to return to your own form. While this spell is ongoing you lose access to all your wizard moves.' },
       { tier: '3rd Level', name: 'Mirror Image', description: '(Illusion) You create an illusory image of yourself. When you are attacked, roll a d6. On a 4, 5, or 6 the attack hits the illusion instead, the image then dissipates and the spell ends.' },
       { tier: '3rd Level', name: 'Sleep', description: "(Enchantment) 1d4 enemies you can see of the GM's choice fall asleep. Only creatures capable of sleeping are affected. They awake as normal: loud noises, jolts, pain." },
+<<<<<<< HEAD
       { tier: '5th Level', name: 'Cage', description: '(Evocation, ongoing) The target is held in a cage of magical force. Nothing can get in or out of the cage. The cage remains until you cast another spell or dismiss it. While the spell is ongoing, the caged creature can hear your thoughts and you cannot leave sight of the cage.' },
       { tier: '5th Level', name: 'Contact Other Plane', description: "(Divination) You send a request to another plane. Specify who or what you'd like to contact by location, type of creature, name, or title. You open a two-way communication with that creature. Your communication can be cut off at any time by you or the creature you contacted." },
       { tier: '5th Level', name: 'Summon Monster', description: "(Summoning, ongoing) A monster appears and aids you as best it can. Treat it as your character, but with access to only the basic moves. It has +1 modifier for all stats, 1 HP, and uses your damage dice. The monster also gets your choice of 1d6 of these traits: It has +2 instead of +1 to one stat / It's not reckless / It does 1d8 damage / Its bond to your plane is strong: +2 HP for each level you have / It has some useful adaptation. While the spell is ongoing you take -1 to cast a spell." },
@@ -772,6 +780,8 @@ Choose one:
       { tier: '9th Level', name: 'Shelter', description: '(Evocation, ongoing) You create a structure out of pure magical power. It can be as large as a castle or as small as a hut, but is impervious to all non-magical damage. The structure endures until you leave it or you end the spell.' },
       { tier: '9th Level', name: 'Perfect Summons', description: '(Summoning) You teleport a creature to your presence. Name a creature or give a short description of a type of creature. If you named a creature, that creature appears before you. If you described a type of creature, a creature of that type appears before you.' },
       { tier: '9th Level', name: 'Antipathy', description: "(Enchantment, ongoing) Choose a target and describe a type of creature or an alignment. Creatures of the specified type or alignment cannot come within sight of the target. If a creature of the specified type does find itself within sight of the target, it immediately flees. This effect continues until you leave the target's presence or you dismiss the spell. While the spell is ongoing you take -1 to cast a spell." },
+=======
+>>>>>>> 6825f91c48cd7d871b88320950dd2521a6e2d07e
     ],
   },
 ];
