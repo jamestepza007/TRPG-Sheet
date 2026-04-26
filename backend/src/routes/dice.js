@@ -110,6 +110,7 @@ router.get('/recent', async (req, res) => {
       username: userMap[r.userId] || null,
       min: r.min,
       max: r.max,
+      details: r.details,
       timestamp: r.createdAt.getTime(),
     })));
   } catch (err) {

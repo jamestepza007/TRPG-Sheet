@@ -95,8 +95,8 @@ export default function CainDiceRoller({ sheet, system, characterName, campaignI
     setRolling(false);
 
     // Save to dice log for Owlbear
-    api.post('/dice', {
-      expression: `${totalDice}D6 (${mode})`,
+    api.post('/dice/roll', {
+      expression: `[${pool.join(', ')}]`,
       result: successes,
       system: 'CAIN',
       characterName: characterName || null,
