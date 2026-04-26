@@ -97,12 +97,12 @@ export default function CainDiceRoller({ sheet, system, characterName, campaignI
     // Save to dice log for Owlbear
     api.post('/dice/roll', {
       expression: `[${pool.join(', ')}]`,
-      result: successes,
+      result: Math.max(...pool),
       system: 'CAIN',
       characterName: characterName || null,
       campaignId: campaignId || null,
-      min: 0,
-      max: totalDice,
+      min: 1,
+      max: 6,
       details: res,
     }).catch(() => {});
 
