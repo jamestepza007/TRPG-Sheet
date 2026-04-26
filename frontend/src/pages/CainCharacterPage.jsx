@@ -476,22 +476,19 @@ function ObservedPowerPopup({ onSelect, onClose }) {
   );
 }
 
-
 // ── Virtue Bond Ability Popup ────────────────────────────────────
-const VIRTUE_COLORS = {
-  JUSTICE:   { bg: '#00c8b4', light: '#e0faf6', text: '#000' },
-  FAITH:     { bg: '#d4a800', light: '#fdf5d0', text: '#000' },
-  CHARITY:   { bg: '#c800a0', light: '#fce0f4', text: '#fff' },
-  FORTITUDE: { bg: '#bb1111', light: '#fae0e0', text: '#fff' },
-  HOPE:      { bg: '#8800cc', light: '#f0e0fa', text: '#fff' },
-  PRUDENCE:  { bg: '#1166dd', light: '#e0eaff', text: '#fff' },
-  // Harpocrates Dossier virtues
-  CHASTITY:  { bg: '#888888', light: '#f0f0f0', text: '#fff' },
-  SOBRIETY:  { bg: '#4a7a3a', light: '#e8f5e4', text: '#fff' },
-  ABSOLUTION:{ bg: '#7a4a00', light: '#f5eade', text: '#fff' },
-};
-
 function VirtueBondPopup({ onSelect, onClose }) {
+  const VIRTUE_COLORS = {
+    JUSTICE:   { bg: '#00c8b4', light: '#e0faf6', text: '#000' },
+    FAITH:     { bg: '#d4a800', light: '#fdf5d0', text: '#000' },
+    CHARITY:   { bg: '#c800a0', light: '#fce0f4', text: '#fff' },
+    FORTITUDE: { bg: '#bb1111', light: '#fae0e0', text: '#fff' },
+    HOPE:      { bg: '#8800cc', light: '#f0e0fa', text: '#fff' },
+    PRUDENCE:  { bg: '#1166dd', light: '#e0eaff', text: '#fff' },
+    CHASTITY:  { bg: '#888888', light: '#f0f0f0', text: '#fff' },
+    SOBRIETY:  { bg: '#4a7a3a', light: '#e8f5e4', text: '#fff' },
+    ABSOLUTION:{ bg: '#7a4a00', light: '#f5eade', text: '#fff' },
+  };
   const [activeVirtue, setActiveVirtue] = useState('all');
   const [search, setSearch] = useState('');
 
