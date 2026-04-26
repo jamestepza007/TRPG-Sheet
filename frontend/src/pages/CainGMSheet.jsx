@@ -244,8 +244,10 @@ export default function CainGMSheet() {
               {campaign.party.members.map(m => {
                 const sd = m.character?.sheetData || {};
                 const cat = sd.cat || 1;
+                const iMax = 3 + (sd.visitationRight ? 1 : 0) + (sd.immaculate ? 1 : 0);
                 const inj = sd.injuries || 0;
-                const eMax = sd.resilientAgenda ? 6 : Math.max(1, 6 - inj);
+                const eBase = 6 + (sd.privateRooms ? 1 : 0) + (sd.leaveOfAbsence ? 1 : 0);
+                const eMax = sd.resilientAgenda ? eBase : Math.max(1, eBase - inj);
                 const str = sd.stress || 0;
                 return (
                   <div key={m.id} style={{ border: `1px solid ${C.border}`, padding: '6px 8px', background: C.bg }}>
@@ -267,10 +269,10 @@ export default function CainGMSheet() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontFamily: C.font, fontSize: 7, color: C.muted }}>{m.user?.username}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {inj >= 0 && (
+                        {iMax > 0 && (
                           <div style={{ display: 'flex', gap: 2 }}>
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < inj ? C.red : 'transparent', border: `1px solid ${i < inj ? C.red : C.border}` }} />
+                            {Array.from({ length: iMax }, (_, i) => (
+                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < inj ? C.red : 'transparent', border: `1px solid ${i < inj ? C.red : C.border}`, opacity: i >= 3 ? 0.5 : 1 }} />
                             ))}
                           </div>
                         )}
