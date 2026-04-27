@@ -6,7 +6,7 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 router.post('/roll', authenticate, async (req, res) => {
-  const { expression, system, campaignId, sendToDiscord, webhookUrl, result, details, characterName, min, max } = req.body;
+  const { expression, system, campaignId, sendToDiscord, webhookUrl, result, details, characterName, min, max, riskDie, isRisky } = req.body;
 
   if (!expression || result === undefined) {
     return res.status(400).json({ error: 'expression and result are required' });
@@ -25,6 +25,8 @@ router.post('/roll', authenticate, async (req, res) => {
         min: min !== undefined ? parseInt(min) : null,
         max: max !== undefined ? parseInt(max) : null,
         sentToDiscord: false,
+        riskDie: riskDie !== undefined ? parseInt(riskDie) : null,
+        isRisky: isRisky || false,
       }
     });
 
@@ -111,6 +113,8 @@ router.get('/recent', async (req, res) => {
       min: r.min,
       max: r.max,
       details: r.details,
+      riskDie: r.riskDie,
+      isRisky: r.isRisky,
       timestamp: r.createdAt.getTime(),
     })));
   } catch (err) {

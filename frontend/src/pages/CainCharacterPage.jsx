@@ -6,7 +6,10 @@ import { getSystem } from '../utils/systems.js';
 import CainDiceRoller from '../components/CainDiceRoller.jsx';
 import toast from 'react-hot-toast';
 import FontSizeControl from '../components/FontSizeControl.jsx';
+import StickerLayer from '../components/StickerLayer.jsx';
 import { AGENDAS, BLASPHEMIES, getAllBlasphemyPowers } from '../utils/cainData.js';
+import { VIRTUES } from '../utils/virtueData.js';
+import { VIRTUES_HARP, BOUND_WEAPON_ENHANCEMENTS } from '../utils/virtueDataHarp.js';
 
 // ── CAIN style tokens ────────────────────────────────────────────
 const C = {
@@ -70,7 +73,7 @@ function HookRow({ hook, index, onChange }) {
         placeholder="HOOK NAME"
         style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontFamily: C.font, fontSize: 12, color: C.dark, borderBottom: `1px solid ${C.border}` }} />
       <div style={{ display: 'flex', gap: 3 }}>
-        {[0, 1, 2, 3].map(i => (
+        {[0, 1, 2].map(i => (
           <div key={i} onClick={() => onChange({ ...hook, slashes: hook.slashes === i + 1 ? 0 : i + 1 })}
             style={{ width: 12, height: 16, borderRight: `2px solid ${i < hook.slashes ? C.dark : C.border}`, cursor: 'pointer' }} />
         ))}
@@ -347,16 +350,53 @@ function AgendaAbilityPopup({ agendaId, onSelect, onClose }) {
   );
 }
 
+
+const HIGH_BLASPHEMY_DATA = {
+  Law:       { col: "#00c8b4", powers: ["Instant, CAT area. Set a rule of physical reality in a circular area equal to CAT. Spend all remaining psyche bursts (min 1). Fill in: In the Court, ____ is/are _____. Choose one effect: grant up to three +1D to allies / instantly kill all humans in the area / slash a talisman by rolling PSYCHE (+1D, +1 slash on success) / make something specific less hard or risky."] },
+  Null:      { col: "#d4a800", powers: ["Instant, Charm, 1 scene. Spend all remaining psyche bursts (min 1). For the scene: completely immune to psychic phenomena and afflictions; cannot use or be affected by any blasphemy other than this one. Cannot be ended early."] },
+  "Immaculate Defiance of Heaven": { col: "#d4a800", powers: ["Permanent. Same as Null but permanent. No blasphemies, sin resets to 0, spend 1d3 stress instead of psyche burst for +1D on any action, fighting sins with mundane abilities is no longer hard (mundane abilities at half CAT), +1 max injury, lifespan extends by 10d10 years."] },
+  Entwine:   { col: "#c800a0", powers: ["Instant, 1 mission. Without spending a psyche burst, choose another willing exorcist. Stress/psyche bursts can be assigned to either person; telepathic communication at extreme distance; feel each other's strong emotions. Afflictions/hooks affect both; sin gained by either affects both; if either suffers sin overflow or instant death, the blasphemy breaks."] },
+  Strength:  { col: "#bb1111", powers: ["Charm, 1 scene. Spend all remaining psyche bursts (min 1). For the scene: mundane physical abilities equal to CAT; fighting sins with mundane forces is no longer hard; push any physical action to CAT+2 by gaining 2d3 stress. All weapons break after use unless tempered. At scene end, take an injury and become comatose until rest."] },
+  Veil:      { col: "#8800cc", powers: ["Instant, long. Spend all remaining psyche bursts. Instantly erase memory of humans/exorcists in CAT range. They become insensate for 11 seconds (+1D for ally). They forget everything for the last 77 seconds.", "Bond III extension: up to 10 min (1d3+1 stress) / up to 1 hour (+1d3+1 sin) / up to 10 hours (+lose important memory) / up to 1 day (+lower sin overflow cap by 2) / up to 10 days (+forget your name, change agendas) / full reset (cease to exist in everyone's memory)."] },
+  Shake:     { col: "#1166dd", powers: ["See PDF for full Shake blasphemy description."] },
+  "Iron Maiden": { col: "#888888", powers: ["Instant. Spend all remaining psyche bursts (min 1) and all remaining KP. Answer yes/no: Did you spend at least 2 Psyche bursts? / Did you spend at least 3 KP? / Are you in an open area visible from sky? For every yes, pick one: Iron Maiden arrives in close distance / arrives within seconds / arrives without complications.", "While worn: anything that would affect you affects Iron Maiden instead; cannot gain hooks or afflictions; still use blasphemy powers. Returns to orbit at scene end. Gains Customizations equal to half CAT chosen each mission."] },
+  Clarity:   { col: "#4a7a3a", powers: ["Charm, 1 scene. Only usable with 2+ injuries. Use ALL remaining psyche bursts (min 1). Roll additional risk die taking only the highest; +1D on actions to avoid/defend/react to danger; automatically succeed to flee conflict scene. When power ends all actions become hard until rest."] },
+  "Lucidity of the Broken Mind": { col: "#4a7a3a", powers: ["Permanent. +2 stress cap. When on brink of death, take -3 stress from all sources. Clarity also gains: a Foresight talisman with segments equal to injuries; while active, slash once to have you or ally avoid any external harm reducing stress by 3. When fully slashed, Clarity ends early."] },
+  Guillotine: { col: "#7a4a00", powers: ["Instant, CAT Range. Spend ALL remaining psyche bursts (min 1). Summon Guillotine to a visible point in range, destroying area equal to half CAT. Roll PSYCHE for severe damage to one foe and 1 slash to every other foe in area.", "Bonus dice per YES (max half CAT+3): Only sentient being in area? / Feel empathy for target? / Half+ of execution talisman slashed? / Target grieving? / All 3 trauma questions answered (sins)? / Plan on executing sin? For each YES take 1 stress (or 3 to auto-succeed). For each NO take 2 stress."] },
+};
+
 // ── Observed Power Popup ─────────────────────────────────────────
+
+// ── Blasphemy color map (4 colors from PDF) ─────────────────────
+const BLASPHEMY_COLOR = {
+  'I. TENSION':    { bg: '#8b1a1a', text: '#fff' },   // Red
+  'II. ARDENCE':   { bg: '#8b1a1a', text: '#fff' },
+  'III. FLUX':     { bg: '#8b1a1a', text: '#fff' },
+  'IV. VECTOR':    { bg: '#7a6800', text: '#fff' },   // Yellow/Gold
+  'V. GATE':       { bg: '#7a6800', text: '#fff' },
+  'VI. SMOTHER':   { bg: '#7a6800', text: '#fff' },
+  'VII. WHISPER':  { bg: '#1a3d6b', text: '#fff' },   // Blue
+  'VIII. EDIT':    { bg: '#1a3d6b', text: '#fff' },
+  'IX. BIND':      { bg: '#1a3d6b', text: '#fff' },
+  'X. JAUNT':      { bg: '#4a1a6b', text: '#fff' },   // Purple
+  'XI. PALACE':    { bg: '#4a1a6b', text: '#fff' },
+  'XII. SYMPATHY': { bg: '#4a1a6b', text: '#fff' },
+};
 function ObservedPowerPopup({ onSelect, onClose }) {
   const [search, setSearch] = useState('');
+  const [activeBlasp, setActiveBlasp] = useState('all');
   const allPowers = getAllBlasphemyPowers();
-  const filtered = search.trim()
-    ? allPowers.filter(p =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.blasphemy.toLowerCase().includes(search.toLowerCase())
-      )
-    : allPowers;
+
+  // All blasphemy names in order
+  const allBlasphemies = BLASPHEMIES.filter(b => b.id !== 'CUSTOM').map(b => b.name);
+
+  const filtered = allPowers.filter(p => {
+    const matchBlasp = activeBlasp === 'all' || p.blasphemy === activeBlasp;
+    const matchSearch = !search.trim() ||
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.blasphemy.toLowerCase().includes(search.toLowerCase());
+    return matchBlasp && matchSearch;
+  });
 
   const grouped = {};
   filtered.forEach(p => {
@@ -364,13 +404,49 @@ function ObservedPowerPopup({ onSelect, onClose }) {
     grouped[p.blasphemy].push(p);
   });
 
+  const COLOR_GROUPS = [
+    { bg: '#8b1a1a', light: '#f5e8e8', ids: ['I. TENSION','II. ARDENCE','III. FLUX'] },
+    { bg: '#7a6000', light: '#f5f0e0', ids: ['IV. VECTOR','V. GATE','VI. SMOTHER'] },
+    { bg: '#1a3d6b', light: '#e8eef5', ids: ['VII. WHISPER','VIII. EDIT','IX. BIND'] },
+    { bg: '#4a1a6b', light: '#f0e8f5', ids: ['X. JAUNT','XI. PALACE','XII. SYMPATHY'] },
+  ];
+
+  const getColor = (name) => {
+    const g = COLOR_GROUPS.find(g => g.ids.includes(name));
+    return g || { bg: '#444', light: '#f0f0f0' };
+  };
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={onClose}>
-      <div style={{ background: '#f2ede3', border: '2px solid #1a1a1a', maxWidth: 520, width: '90%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+      <div style={{ background: '#f2ede3', border: '2px solid #1a1a1a', maxWidth: 560, width: '92%', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
         <div style={{ padding: '12px 16px', borderBottom: '2px solid #1a1a1a' }}>
           <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 8 }}>OBSERVED POWERS — เลือก Power</div>
+
+          {/* Blasphemy filter buttons — grouped by color */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+            <button
+              onClick={() => setActiveBlasp('all')}
+              style={{ padding: '3px 10px', fontSize: 9, fontFamily: "'Arial Narrow', Arial, sans-serif", fontWeight: 700, letterSpacing: '0.08em', border: '1px solid #999', cursor: 'pointer', background: activeBlasp === 'all' ? '#1a1a1a' : 'transparent', color: activeBlasp === 'all' ? '#f2ede3' : '#555' }}>
+              ALL
+            </button>
+            {COLOR_GROUPS.map(grp => (
+              grp.ids.map(bid => {
+                const active = activeBlasp === bid;
+                return (
+                  <button key={bid}
+                    onClick={() => setActiveBlasp(active ? 'all' : bid)}
+                    style={{ padding: '3px 8px', fontSize: 9, fontFamily: "'Arial Narrow', Arial, sans-serif", fontWeight: 700, letterSpacing: '0.06em', border: `1px solid ${grp.bg}`, cursor: 'pointer', background: active ? grp.bg : grp.light, color: active ? '#fff' : grp.bg, transition: 'all 0.1s' }}>
+                    {bid}
+                  </button>
+                );
+              })
+            ))}
+          </div>
+
           <input
             autoFocus
             value={search}
@@ -379,24 +455,226 @@ function ObservedPowerPopup({ onSelect, onClose }) {
             style={{ width: '100%', padding: '6px 8px', border: '1px solid #999', background: '#fff', fontFamily: "'Courier New', monospace", fontSize: 11, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
+
+        {/* Power list */}
         <div style={{ overflowY: 'auto', padding: '8px 16px', flex: 1 }}>
-          {Object.entries(grouped).map(([blasphemyName, powers]) => (
-            <div key={blasphemyName}>
-              <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#888', marginTop: 10, marginBottom: 4, borderBottom: '1px solid #ccc', paddingBottom: 2 }}>{blasphemyName}</div>
-              {powers.map(p => (
-                <div key={p.name}
-                  onClick={() => { onSelect(p.name.toUpperCase() + '\n' + p.description); onClose(); }}
-                  style={{ padding: '6px 8px', marginBottom: 4, background: 'rgba(0,0,0,0.03)', border: '1px solid #bbb', cursor: 'pointer' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}>
-                  <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{p.name}</div>
-                  <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: '#555', lineHeight: 1.3, marginTop: 2 }}>{p.description.substring(0, 120)}{p.description.length > 120 ? '...' : ''}</div>
+          {Object.entries(grouped).map(([blasphemyName, powers]) => {
+            const clr = getColor(blasphemyName);
+            return (
+              <div key={blasphemyName}>
+                {/* Blasphemy header with color bg */}
+                <div style={{ background: clr.bg, color: '#fff', fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '4px 8px', marginTop: 10, marginBottom: 4 }}>
+                  {blasphemyName}
                 </div>
-              ))}
-            </div>
-          ))}
+                {powers.map(p => (
+                  <div key={p.name}
+                    onClick={() => { onSelect(p.name.toUpperCase() + '\n' + p.description); onClose(); }}
+                    style={{ padding: '6px 8px', marginBottom: 4, background: clr.light, border: `1px solid ${clr.bg}44`, cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.background = clr.bg + '22'}
+                    onMouseLeave={e => e.currentTarget.style.background = clr.light}>
+                    <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: clr.bg }}>{p.name}</div>
+                    <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: '#555', lineHeight: 1.3, marginTop: 2 }}>{p.description.substring(0, 130)}{p.description.length > 130 ? '...' : ''}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
           {Object.keys(grouped).length === 0 && (
             <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: '#888', padding: '20px 0', textAlign: 'center' }}>ไม่พบ power ที่ตรงกัน</div>
+          )}
+        </div>
+
+        <div style={{ padding: '8px 16px', borderTop: '1px solid #ccc' }}>
+          <button onClick={onClose} style={{ padding: '4px 14px', background: '#1a1a1a', color: '#f2ede3', border: 'none', fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, letterSpacing: '0.1em', cursor: 'pointer' }}>CLOSE</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Virtue Bond Ability Popup ────────────────────────────────────
+function VirtueBondPopup({ onSelect, onClose }) {
+  const VIRTUE_COLORS = {
+    JUSTICE:   { bg: '#00c8b4', light: '#e0faf6', text: '#000' },
+    FAITH:     { bg: '#d4a800', light: '#fdf5d0', text: '#000' },
+    CHARITY:   { bg: '#c800a0', light: '#fce0f4', text: '#fff' },
+    FORTITUDE: { bg: '#bb1111', light: '#fae0e0', text: '#fff' },
+    HOPE:      { bg: '#8800cc', light: '#f0e0fa', text: '#fff' },
+    PRUDENCE:  { bg: '#1166dd', light: '#e0eaff', text: '#fff' },
+    CHASTITY:  { bg: '#888888', light: '#f0f0f0', text: '#fff' },
+    SOBRIETY:  { bg: '#4a7a3a', light: '#e8f5e4', text: '#fff' },
+    ABSOLUTION:{ bg: '#7a4a00', light: '#f5eade', text: '#fff' },
+  };
+  const [activeVirtue, setActiveVirtue] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const ALL_VIRTUES = [...VIRTUES, ...VIRTUES_HARP];
+  const allAbilities = ALL_VIRTUES.flatMap(v =>
+    v.abilities.map(a => ({ ...a, virtue: v.name, virtueId: v.id, epithet: v.epithet }))
+  );
+
+  const filtered = allAbilities.filter(a => {
+    const matchVirtue = activeVirtue === 'all' || a.virtueId === activeVirtue;
+    const matchSearch = !search.trim() ||
+      a.description.toLowerCase().includes(search.toLowerCase()) ||
+      a.virtue.toLowerCase().includes(search.toLowerCase());
+    return matchVirtue && matchSearch;
+  });
+
+  const grouped = {};
+  filtered.forEach(a => {
+    if (!grouped[a.virtue]) grouped[a.virtue] = [];
+    grouped[a.virtue].push(a);
+  });
+
+  const getClr = (virtueId) => VIRTUE_COLORS[virtueId] || { bg: '#444', light: '#f0f0f0', text: '#fff' };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}>
+      <div style={{ background: '#f2ede3', border: '2px solid #1a1a1a', maxWidth: 560, width: '92%', maxHeight: '86vh', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}>
+
+        <div style={{ padding: '12px 16px', borderBottom: '2px solid #1a1a1a' }}>
+          <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>VIRTUE BOND ABILITIES</div>
+          {/* Virtue filter buttons with colors */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+            <button onClick={() => setActiveVirtue('all')}
+              style={{ padding: '3px 10px', fontSize: 9, fontFamily: "'Arial Narrow', Arial, sans-serif", fontWeight: 700, letterSpacing: '0.08em', border: '1px solid #999', cursor: 'pointer', background: activeVirtue === 'all' ? '#1a1a1a' : 'transparent', color: activeVirtue === 'all' ? '#f2ede3' : '#555' }}>
+              ALL
+            </button>
+            {ALL_VIRTUES.map(v => {
+              const clr = getClr(v.id);
+              const active = activeVirtue === v.id;
+              return (
+                <button key={v.id} onClick={() => setActiveVirtue(active ? 'all' : v.id)}
+                  style={{ padding: '3px 9px', fontSize: 9, fontFamily: "'Arial Narrow', Arial, sans-serif", fontWeight: 700, letterSpacing: '0.06em', border: `1px solid ${clr.bg}`, cursor: 'pointer', background: active ? clr.bg : clr.light, color: active ? clr.text : clr.bg, transition: 'all 0.1s' }}>
+                  {v.name}
+                </button>
+              );
+            })}
+          </div>
+          <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="ค้นหา bond ability..."
+            style={{ width: '100%', padding: '6px 8px', border: '1px solid #999', background: '#fff', fontFamily: "'Courier New', monospace", fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
+        </div>
+
+        <div style={{ overflowY: 'auto', padding: '8px 16px', flex: 1 }}>
+          {Object.entries(grouped).map(([virtueName, abilities]) => {
+            const vData = ALL_VIRTUES.find(v => v.name === virtueName);
+            const clr = getClr(vData?.id || '');
+            return (
+              <div key={virtueName}>
+                {/* Virtue header with PDF color */}
+                <div style={{ background: clr.bg, color: clr.text, fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '5px 10px', marginTop: 10, marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>{virtueName}</span>
+                  <span style={{ fontSize: 8, opacity: 0.7, letterSpacing: '0.08em', fontWeight: 400 }}>{vData?.epithet} — {vData?.highBlasphemy}</span>
+                </div>
+                {abilities.map((a, i) => (
+                  <div key={i}
+                    onClick={() => { onSelect('BOND ' + ['0','I','II','III'][a.level] + ' [' + a.virtue + ']\n' + a.description); onClose(); }}
+                    style={{ padding: '7px 10px', marginBottom: 4, background: clr.light, border: `1px solid ${clr.bg}44`, cursor: 'pointer' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = clr.bg + '33'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = clr.light; }}>
+                    <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: clr.bg, marginBottom: 2 }}>BOND {['0','I','II','III'][a.level]}</div>
+                    <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: '#444', lineHeight: 1.4 }}>{a.description}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          {filtered.length === 0 && (
+            <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: '#888', padding: '20px 0', textAlign: 'center' }}>ไม่พบ ability ที่ตรงกัน</div>
+          )}
+        </div>
+
+        <div style={{ padding: '8px 16px', borderTop: '1px solid #ccc' }}>
+          <button onClick={onClose} style={{ padding: '4px 14px', background: '#1a1a1a', color: '#f2ede3', border: 'none', fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, letterSpacing: '0.1em', cursor: 'pointer' }}>CLOSE</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── Weapon Enhancement Popup ─────────────────────────────────────
+const WEAPON_TRACK_COLORS = {
+  // STEALTH track — blue/grey border (p.65 top-left)
+  'Gentle Silence': '#4a7a9a', 'Moon in The Winter': '#4a7a9a',
+  // DEATH track — dark grey/black border (p.65 bottom-left)
+  'Grave Bearer': '#333333', 'Last Rites': '#333333', 'Execution': '#333333', 'Nullification Ritual': '#333333',
+  // HEAVY track — red border (p.65 center)
+  'Heavy Soul': '#cc2222',
+  // ENVY track — gold/yellow border (p.65 top-right)
+  'Envy': '#b89000', 'Two-Headed Serpent': '#b89000',
+  // GLITTER track — magenta/pink border (p.66)
+  'Glitter': '#cc00aa', 'Mania': '#cc00aa', 'Deluxe Deviant Death Monarch': '#cc00aa',
+  // HUNGERING — red border (p.66 left)
+  'Hungering': '#aa0000',
+  // MENACING track — teal/cyan border (p.66 left)
+  'Menacing': '#008899', 'Justicar': '#008899',
+  // HEAVEN'S TOUCH — yellow border (p.66 center)
+  "Heaven's Touch": '#ccaa00',
+  // DEADWEIGHT track — grey border (p.66 right)
+  'Deadweight': '#666666', 'Nihility': '#666666', 'Call of the Void': '#666666',
+  // SENSITIVE track — dark border (p.66 right)
+  'Sensitive': '#888888', 'Spiked-Steel': '#888888', 'Iron Maiden': '#888888',
+  // DEATH DEFIER — grey border (p.66 far right)
+  'Death Defier': '#777777',
+  // HATE track — dark/black border with white text (p.67 bottom-left)
+  'Hate': '#222222', 'Vitriol': '#222222', 'Rot Unfurling': '#222222',
+  // SERRATED track — green border (p.67)
+  'Serrated': '#336600', "Glutton's Bloodletter": '#336600',
+  // GOLD-PLATED — gold border (p.67)
+  'Gold-Plated': '#cc9900',
+  // EXPLOSIVE — red border (p.67)
+  'Explosive': '#dd2200',
+  // AMORPHOUS track — purple border (p.67 right)
+  'Amorphous': '#7700aa', 'Evolution': '#7700aa',
+};
+
+function WeaponEnhancementPopup({ onSelect, onClose }) {
+  const [search, setSearch] = useState('');
+  const filtered = search.trim()
+    ? BOUND_WEAPON_ENHANCEMENTS.filter(e =>
+        e.name.toLowerCase().includes(search.toLowerCase()) ||
+        e.description.toLowerCase().includes(search.toLowerCase()) ||
+        (e.prereq || '').toLowerCase().includes(search.toLowerCase())
+      )
+    : BOUND_WEAPON_ENHANCEMENTS;
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}>
+      <div style={{ background: '#f2ede3', border: '2px solid #1a1a1a', maxWidth: 540, width: '92%', maxHeight: '86vh', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '12px 16px', borderBottom: '2px solid #1a1a1a' }}>
+          <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 8 }}>BOUND WEAPON ENHANCEMENTS</div>
+          <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="ค้นหา enhancement..."
+            style={{ width: '100%', padding: '6px 8px', border: '1px solid #999', background: '#fff', fontFamily: "'Courier New', monospace", fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
+        </div>
+        <div style={{ overflowY: 'auto', padding: '8px 16px', flex: 1 }}>
+          {filtered.map((e, i) => {
+            const col = WEAPON_TRACK_COLORS[e.name] || '#666';
+            const lightBg = col + '18';
+            return (
+              <div key={i}
+                onClick={() => { onSelect(e.name.toUpperCase() + ' (Cost: ' + e.cost + (e.prereq ? ', Req: ' + e.prereq : '') + ')\n' + e.description); onClose(); }}
+                style={{ padding: '7px 10px', marginBottom: 5, background: lightBg, border: `1px solid ${col}66`, cursor: 'pointer', transition: 'background 0.1s' }}
+                onMouseEnter={ev => ev.currentTarget.style.background = col + '33'}
+                onMouseLeave={ev => ev.currentTarget.style.background = lightBg}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: col }}>{e.name}</div>
+                  <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, background: col, color: '#fff', padding: '1px 6px' }}>COST {e.cost}</div>
+                  {e.prereq && <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: '#888' }}>← {e.prereq}</div>}
+                </div>
+                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: '#444', lineHeight: 1.4 }}>{e.description}</div>
+              </div>
+            );
+          })}
+          {filtered.length === 0 && (
+            <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: '#888', padding: '20px 0', textAlign: 'center' }}>ไม่พบ enhancement ที่ตรงกัน</div>
           )}
         </div>
         <div style={{ padding: '8px 16px', borderTop: '1px solid #ccc' }}>
@@ -415,6 +693,10 @@ export default function CainCharacterPage() {
   const [sheet, setSheet] = useState({});
   const [saveStatus, setSaveStatus] = useState('saved');
   const [agendaAbilityPopup, setAgendaAbilityPopup] = useState(false);
+  const [tabStickers, setTabStickers] = useState({ sheet: [], bonds: [], notes: [] });
+  const pageRef = useRef(null);
+  const [bondAbilityPopup, setBondAbilityPopup] = useState(false);
+  const [weaponEnhancementPopup, setWeaponEnhancementPopup] = useState(false);
   const [observedPowerPopup, setObservedPowerPopup] = useState(null); // null or index 0-4
   const [cropSrc, setCropSrc] = useState(null);
   const [partyData, setPartyData] = useState(null);
@@ -474,6 +756,7 @@ export default function CainCharacterPage() {
       const merged = { ...defaults, ...res.data.sheetData };
       sheetRef.current = merged;
       setSheet(merged);
+      if (merged.tabStickers) setTabStickers({ sheet: [], bonds: [], notes: [], ...merged.tabStickers });
     } catch { toast.error('Character not found'); navigate('/'); }
   };
 
@@ -513,6 +796,8 @@ export default function CainCharacterPage() {
     </div>
   );
 
+
+
   const psyche = sys.getPsyche(sheet.cat || 1);
   const injuries = sheet.injuries || 0;
   const resilient = sheet.resilientAgenda || false;
@@ -528,10 +813,23 @@ export default function CainCharacterPage() {
   const statusLabel = { saved: '■ FILED', saving: '◌ FILING...', dirty: '○ UNSAVED', error: '✕ ERROR' }[saveStatus];
 
   return (
-    <div style={{ background: '#d4cfc4', minHeight: '100vh', padding: '20px' }}>
+    <div ref={pageRef} style={{ background: '#d4cfc4', minHeight: '100vh', padding: '20px', position: 'relative' }}>
+      <StickerLayer
+        stickers={tabStickers[activeTab] || []}
+        containerRef={pageRef}
+        onChange={newStickers => {
+          setTabStickers(prev => {
+            const next = { ...prev, [activeTab]: newStickers };
+            update('tabStickers', next);
+            return next;
+          });
+        }}
+      />
       <style>{`
         input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
         textarea { resize: vertical; color: #1a1a1a !important; background-color: rgba(0,0,0,0.03) !important; }
+        .bond-input::placeholder { color: rgba(242,237,227,0.45) !important; }
+        .bond-input { color: #f2ede3 !important; }
         input { color: #1a1a1a !important; }
         * { box-sizing: border-box; }
       `}</style>
@@ -553,7 +851,7 @@ export default function CainCharacterPage() {
 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 12, borderBottom: `2px solid ${C.borderDark}` }}>
-        {[['sheet','◈ CHARACTER SHEET'], ['notes','◈ NOTES']].map(([key, label]) => (
+        {[['sheet','◈ CHARACTER SHEET'], ['bonds','◈ BONDS & CONNECTIONS'], ['notes','◈ NOTES']].map(([key, label]) => (
           <button key={key} onClick={() => setActiveTab(key)}
             style={{ background: 'transparent', border: 'none', borderBottom: activeTab === key ? `2px solid ${C.dark}` : '2px solid transparent', marginBottom: -2, color: activeTab === key ? C.dark : C.muted, fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, padding: '6px 16px', cursor: 'pointer', letterSpacing: '0.12em' }}>
             {label}
@@ -566,6 +864,221 @@ export default function CainCharacterPage() {
           <textarea value={sheet.notes || ''} onChange={e => update('notes', e.target.value)}
             placeholder="Notes..."
             style={{ width: '100%', height: '70vh', resize: 'vertical', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 6 }} />
+        </div>
+      )}
+
+      {/* ── Bonds & Connections Panel ── */}
+      {activeTab === 'bonds' && (
+        <div style={{ background: C.bg, border: `1px solid ${C.borderDark}`, padding: 20, fontFamily: C.font, color: C.dark }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+
+            {/* LEFT COL */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+              {/* VIRTUE BONDS */}
+              <div style={{ border: `1px solid ${C.borderDark}`, padding: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div style={{ fontFamily: C.fontSans, fontSize: 13, fontWeight: 700, letterSpacing: '0.15em' }}>VIRTUE BONDS</div>
+                  <button onClick={() => {
+                    const slots = [...(sheet.virtueSlots || [{name:'',desc:''}])];
+                    slots.push({name:'',desc:''});
+                    update('virtueSlots', slots);
+                  }} style={{ background: C.dark, color: C.bg, border: 'none', borderRadius: 0, padding: '1px 7px', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer' }}>+ ADD</button>
+                </div>
+                <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 10 }}>
+                  Bond level starts at 0 and increases with each successful mission. Ignore strictures by taking 1d3 nonlethal stress.
+                </div>
+                {(sheet.virtueSlots || [{name:'',desc:''}]).map((slot, i) => {
+                  const ALL_V = [...VIRTUES, ...VIRTUES_HARP];
+                  const picked = ALL_V.find(v => v.name === slot.name);
+                  const VCOL = { Justice:'#00c8b4', Faith:'#d4a800', Charity:'#c800a0', Fortitude:'#bb1111', Hope:'#8800cc', Prudence:'#1166dd', Chastity:'#888888', Sobriety:'#4a7a3a', Absolution:'#7a4a00' };
+                  const col = VCOL[slot.name] || C.borderDark;
+                  return (
+                    <div key={i} style={{ marginBottom: 10, border: `1px solid ${col}44`, padding: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        {/* Styled same as AGND dropdown */}
+                        <div style={{ flex: 1, position: 'relative' }}>
+                          <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', color: C.mid, marginBottom: 2 }}>VIRTUE:</div>
+                          <div style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${col || '#999'}`, paddingBottom: 2 }}>
+                            <select value={slot.name || ''} onChange={e => {
+                              const slots = [...(sheet.virtueSlots || [{name:'',desc:''}])];
+                              const vData = ALL_V.find(v => v.name === e.target.value);
+                              slots[i] = { name: e.target.value, desc: vData ? vData.strictures.join('\n') : '' };
+                              update('virtueSlots', slots);
+                            }} style={{ flex: 1, background: 'transparent', border: 'none', fontFamily: C.font, fontSize: 13, color: col || C.dark, outline: 'none', padding: '2px 0', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}>
+                              <option value="" style={{ color: C.dark }}>— เลือก Virtue —</option>
+                              {['Justice','Faith','Charity','Fortitude','Hope','Prudence','Chastity','Sobriety','Absolution','Custom'].map(n => (
+                                <option key={n} value={n} style={{ color: C.dark }}>{n}</option>
+                              ))}
+                            </select>
+                            <span style={{ fontSize: 8, color: '#888', pointerEvents: 'none' }}>▾</span>
+                          </div>
+                        </div>
+                        {(sheet.virtueSlots || []).length > 1 && (
+                          <button onClick={() => {
+                            const slots = [...(sheet.virtueSlots || [{name:'',desc:''}])];
+                            slots.splice(i, 1);
+                            update('virtueSlots', slots);
+                          }} style={{ background: 'transparent', border: 'none', color: '#aaa', fontSize: 14, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+                        )}
+                      </div>
+                      <div style={{ fontFamily: C.fontSans, fontSize: 7, fontWeight: 700, letterSpacing: '0.1em', color: C.mid, marginBottom: 2 }}>STRICTURES</div>
+                      <textarea value={slot.desc || ''} onChange={e => {
+                        const slots = [...(sheet.virtueSlots || [{name:'',desc:''}])];
+                        slots[i] = { ...slot, desc: e.target.value };
+                        update('virtueSlots', slots);
+                      }} rows={2} placeholder="Strictures..."
+                        style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 9, color: C.dark, padding: 3, resize: 'vertical', boxSizing: 'border-box' }} />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* HIGH BLASPHEMY */}
+              {(() => {
+                const hbName = sheet.highBlasphemyName || '';
+                const hbData = HIGH_BLASPHEMY_DATA[hbName];
+                const hbCol = hbData?.col || C.borderDark;
+                return (
+                  <div style={{ border: `1px solid ${hbCol}66`, padding: 14 }}>
+                    {/* Header + Dropdown */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                      <div style={{ fontFamily: C.fontSans, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>HIGH<br/>BLASPHEMY</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${hbCol || '#999'}`, paddingBottom: 2 }}>
+                          <select value={hbName} onChange={e => {
+                            const picked = HIGH_BLASPHEMY_DATA[e.target.value];
+                            update('highBlasphemyName', e.target.value);
+                            if (picked) {
+                              picked.powers.forEach((p, idx) => update('highBlasphemyPower' + (idx+1), p));
+                              for (let idx = picked.powers.length + 1; idx <= 4; idx++) update('highBlasphemyPower' + idx, '');
+                            }
+                          }} style={{ flex: 1, background: 'transparent', border: 'none', fontFamily: C.font, fontSize: 13, color: hbCol || C.dark, outline: 'none', padding: '2px 0', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', fontWeight: 700 }}>
+                            <option value="" style={{ color: C.dark }}>— เลือก High Blasphemy —</option>
+                            {Object.keys(HIGH_BLASPHEMY_DATA).map(n => (
+                              <option key={n} value={n} style={{ color: C.dark }}>{n}</option>
+                            ))}
+                            <option value="Custom" style={{ color: C.dark }}>✏ Custom</option>
+                          </select>
+                          <span style={{ fontSize: 8, color: '#888', pointerEvents: 'none' }}>▾</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 8, lineHeight: 1.4 }}>
+                      High blasphemies typically require spending all your remaining <strong>psyche bursts</strong> (min 1). Sin cannot be used to compensate for these bursts.
+                    </div>
+                    {/* Description textarea */}
+                    <textarea value={sheet.highBlasphemyDesc || ''} onChange={e => update('highBlasphemyDesc', e.target.value)}
+                      rows={3} placeholder="Notes on this blasphemy..."
+                      style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${hbCol}44`, fontFamily: C.font, fontSize: 10, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box', marginBottom: 8 }} />
+                    {/* 4 power slots */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      {[1,2,3,4].map(n => (
+                        <div key={n}>
+                          <div style={{ fontFamily: C.fontSans, fontSize: 7, fontWeight: 700, color: hbCol || C.muted, letterSpacing: '0.1em', marginBottom: 2, borderLeft: `3px solid ${hbCol || C.border}`, paddingLeft: 4 }}>POWER {n}</div>
+                          <textarea value={sheet['highBlasphemyPower' + n] || ''} onChange={e => update('highBlasphemyPower' + n, e.target.value)}
+                            rows={4} placeholder={n <= (hbData?.powers?.length || 0) ? '' : 'Custom power...'}
+                            style={{ width: '100%', background: n <= (hbData?.powers?.length || 0) ? hbCol + '0d' : 'rgba(0,0,0,0.02)', border: `1px solid ${n <= (hbData?.powers?.length || 0) ? hbCol + '44' : C.border}`, fontFamily: C.font, fontSize: 9, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box' }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+            </div>
+
+            {/* RIGHT COL */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+              {/* EXORCIST BONDS */}
+              <div style={{ border: `1px solid ${C.borderDark}`, padding: 14 }}>
+                <div style={{ fontFamily: C.fontSans, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', marginBottom: 6 }}>EXORCIST BONDS</div>
+                <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
+                  When an Exorcist takes an action that would grant another Exorcist Agenda XP and that Exorcist is in the scene with them, these two Exorcists can create a shared three-slash bond talisman. Slash it each time:<br/>
+                  • One of these Exorcists sets up the other.<br/>
+                  • Both of these Exorcists are part of a teamwork action.<br/>
+                  • One of these Exorcists sacrifices something meaningful for the other.
+                </div>
+                {(sheet.exorcistBonds || [{name:'',slashes:0},{name:'',slashes:0},{name:'',slashes:0}]).map((bond, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, background: C.dark, padding: '6px 10px' }}>
+                    <div style={{ fontFamily: C.fontSans, fontSize: 9, letterSpacing: '0.1em', flex: 1 }}>
+                      <input value={bond.name} onChange={e => {
+                        const bonds = [...(sheet.exorcistBonds || [{name:'',slashes:0},{name:'',slashes:0},{name:'',slashes:0}])];
+                        bonds[i] = {...bond, name: e.target.value};
+                        update('exorcistBonds', bonds);
+                      }} placeholder="EXORCIST BOND"
+                        className="bond-input"
+                        style={{ background: 'transparent', border: 'none', outline: 'none', fontFamily: C.fontSans, fontSize: 9, color: '#f2ede3', letterSpacing: '0.1em', width: '100%' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 2 }}>
+                      {[0,1,2].map(j => (
+                        <div key={j} onClick={() => {
+                          const bonds = [...(sheet.exorcistBonds || [{name:'',slashes:0},{name:'',slashes:0},{name:'',slashes:0}])];
+                          bonds[i] = {...bond, slashes: bond.slashes === j+1 ? 0 : j+1};
+                          update('exorcistBonds', bonds);
+                        }} style={{ width: 12, height: 18, borderRight: `2px solid ${j < bond.slashes ? '#f2ede3' : 'rgba(255,255,255,0.35)'}`, cursor: 'pointer' }} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* BOND ABILITIES */}
+              <div style={{ border: `1px solid ${C.borderDark}`, padding: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em' }}>BOND ABILITIES</div>
+                  <button onClick={() => setBondAbilityPopup(true)}
+                    style={{ background: C.dark, color: C.bg, border: 'none', borderRadius: 0, padding: '1px 7px', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer' }}>+ ADD</button>
+                </div>
+                <textarea value={sheet.bondAbilities || ''} onChange={e => update('bondAbilities', e.target.value)}
+                  rows={8} placeholder="Bond abilities..."
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box' }} />
+                {bondAbilityPopup && (
+                  <VirtueBondPopup
+                    onSelect={text => update('bondAbilities', (sheet.bondAbilities ? sheet.bondAbilities + '\n\n' : '') + text)}
+                    onClose={() => setBondAbilityPopup(false)}
+                  />
+                )}
+              </div>
+
+              {/* BOUND WEAPON */}
+              <div style={{ border: `1px solid ${C.borderDark}`, padding: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <div style={{ background: C.dark, color: C.bg, fontFamily: C.fontSans, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', padding: '4px 10px' }}>BOUND WEAPON</div>
+                  <div style={{ fontFamily: C.font, fontSize: 16 }}>⚔</div>
+                  <div style={{ display: 'flex', gap: 3 }}>
+                    {[0,1,2].map(i => (
+                      <div key={i} onClick={() => update('boundWeaponSlashes', sheet.boundWeaponSlashes === i+1 ? 0 : i+1)}
+                        style={{ width: 18, height: 22, border: `1px solid ${C.borderDark}`, background: i < (sheet.boundWeaponSlashes||0) ? C.dark : 'transparent', cursor: 'pointer' }} />
+                    ))}
+                  </div>
+                </div>
+                <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 8, lineHeight: 1.5 }}>
+                  Enhancements cost anywhere from 0-3. You can pay a cost of 1 by permanently reducing your stress cap by 1 OR your sin cap by 1. This can be done in any combination.
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em' }}>WEAPON ENHANCEMENTS</div>
+                  <button onClick={() => setWeaponEnhancementPopup(true)}
+                    style={{ background: C.dark, color: C.bg, border: 'none', borderRadius: 0, padding: '1px 7px', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer' }}>+ ADD</button>
+                </div>
+                <textarea value={sheet.weaponEnhancements || ''} onChange={e => update('weaponEnhancements', e.target.value)}
+                  rows={4} placeholder="Enhancements..."
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box' }} />
+                {weaponEnhancementPopup && (
+                  <WeaponEnhancementPopup
+                    onSelect={text => update('weaponEnhancements', (sheet.weaponEnhancements ? sheet.weaponEnhancements + '\n\n' : '') + text)}
+                    onClose={() => setWeaponEnhancementPopup(false)}
+                  />
+                )}
+                <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', marginTop: 10, marginBottom: 4 }}>REGISTERED WEAPON(S):</div>
+                <input value={sheet.registeredWeapons || ''} onChange={e => update('registeredWeapons', e.target.value)}
+                  placeholder="Weapon name(s)..."
+                  style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: `1px solid ${C.borderDark}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: '2px 0', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+
+            </div>
+          </div>
         </div>
       )}
 
@@ -721,7 +1234,7 @@ export default function CainCharacterPage() {
                 execMax={execMax}
                 onStressChange={v => update('stress', v)}
                 onInjury={() => {
-                  const newInjuries = Math.min(5, injuries + 1);
+                  const newInjuries = Math.min(injuryMax, injuries + 1);
                   update('injuries', newInjuries);
                   update('stress', 0);
                 }}
@@ -959,7 +1472,7 @@ export default function CainCharacterPage() {
         </div> {/* end LEFT COLUMN */}
 
         {/* ── RIGHT COLUMN: Party + Dice Roller (sticky) ── */}
-        <div style={{ position: 'sticky', top: 12, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ position: 'sticky', top: 12, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 10, zIndex: 80 }}>
 
           {/* Party Panel */}
           {partyData && (
@@ -972,8 +1485,10 @@ export default function CainCharacterPage() {
                   const sd = m.character?.sheetData || {};
                   const isMe = m.character?.id === id;
                   const cat = sd.cat || 1;
+                  const iMax = 3 + (sd.visitationRight ? 1 : 0) + (sd.immaculate ? 1 : 0);
                   const inj = sd.injuries || 0;
-                  const eMax = sd.resilientAgenda ? 6 : Math.max(1, 6 - inj);
+                  const eBase = 6 + (sd.privateRooms ? 1 : 0) + (sd.leaveOfAbsence ? 1 : 0);
+                  const eMax = sd.resilientAgenda ? eBase : Math.max(1, eBase - inj);
                   const str = sd.stress || 0;
                   return (
                     <div key={m.id} style={{ border: `1px solid ${isMe ? C.borderDark : C.border}`, background: isMe ? 'rgba(0,0,0,0.05)' : 'transparent', padding: '5px 7px' }}>
@@ -994,13 +1509,13 @@ export default function CainCharacterPage() {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ fontFamily: C.font, fontSize: 7, color: C.muted }}>{m.user?.username}</div>
-                        {(sd.injuries || 0) > 0 && (
+                        {(() => { return iMax > 0 && (
                           <div style={{ display: 'flex', gap: 1 }}>
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', border: `1px solid ${C.red}`, background: i < (sd.injuries || 0) ? C.red : 'transparent' }} />
+                            {Array.from({ length: iMax }, (_, i) => (
+                              <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', border: `1px solid ${C.red}`, background: i < inj ? C.red : 'transparent' }} />
                             ))}
                           </div>
-                        )}
+                        ); })()}
                       </div>
                     </div>
                   );

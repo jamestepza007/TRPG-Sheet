@@ -90,7 +90,7 @@ export const AGENDAS = [
   },
   {
     id: 'SEEKER',
-    name: 'SEEKER',
+    name: 'MOTH',
     items: '► Uncover hidden or uncomfortable truths about the world.\n► Uncover hidden or uncomfortable truths about yourself.',
     abilities: [
       { name: 'Psyche Jewel', description: "When you or an ally answers a Sin's trauma question, regain 1 psyche burst, recover 1 sin, and erase 1 stress." },
@@ -158,7 +158,7 @@ export const AGENDAS = [
   },
   {
     id: 'BIRDSONG',
-    name: 'BIRDSONG',
+    name: 'SONGBIRD',
     items: '► Get someone to do your bidding\n► Do something selfless',
     abilities: [
       { name: 'Codependency', description: 'When someone sets you up, you can trade 1 stress around (from you to them, or vice versa).' },

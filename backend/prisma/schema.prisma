@@ -96,6 +96,8 @@ model DiceLog {
   min           Int?
   max           Int?
   sentToDiscord Boolean    @default(false)
+  riskDie       Int?
+  isRisky       Boolean    @default(false)
   createdAt     DateTime   @default(now())
 }
 

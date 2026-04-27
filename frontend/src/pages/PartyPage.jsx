@@ -93,7 +93,9 @@ function CainMemberCard({ member }) {
   const sd = member.character.sheetData || {};
   const cat = sd.cat || 1;
   const injuries = sd.injuries || 0;
-  const execMax = Math.max(1, 6 - injuries);
+  const injuryMax = 3 + (sd.visitationRight ? 1 : 0) + (sd.immaculate ? 1 : 0);
+  const execBase = 6 + (sd.privateRooms ? 1 : 0) + (sd.leaveOfAbsence ? 1 : 0);
+  const execMax = sd.resilientAgenda ? execBase : Math.max(1, execBase - injuries);
   const stress = sd.stress || 0;
   const psyche = Math.ceil(cat / 2);
   const sinBoxes = sd.sinBoxes || 0;
@@ -143,7 +145,7 @@ function CainMemberCard({ member }) {
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: C.fontSans, fontSize: 7, fontWeight: 700, color: C.red, marginBottom: 3 }}>INJURIES</div>
             <div>
-              {Array.from({ length: 5 }, (_, i) => (
+              {Array.from({ length: injuryMax }, (_, i) => (
                 <CainDot key={i} filled={i < injuries} dashed={i >= 3} />
               ))}
             </div>
