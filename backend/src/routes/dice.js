@@ -20,13 +20,12 @@ router.post('/roll', authenticate, async (req, res) => {
         system: system || 'DUNGEON_WORLD',
         expression,
         result: parseInt(result),
-        details: details || {},
         characterName: characterName || null,
         min: min !== undefined ? parseInt(min) : null,
         max: max !== undefined ? parseInt(max) : null,
         sentToDiscord: false,
-        riskDie: riskDie !== undefined ? parseInt(riskDie) : null,
-        isRisky: isRisky || false,
+        // riskDie stored in details until db migration
+        details: { ...(details || {}), riskDie: riskDie || null, isRisky: isRisky || false },
       }
     });
 
@@ -113,8 +112,8 @@ router.get('/recent', async (req, res) => {
       min: r.min,
       max: r.max,
       details: r.details,
-      riskDie: r.riskDie,
-      isRisky: r.isRisky,
+      riskDie: r.riskDie ?? (r.details?.riskDie ?? null),
+      isRisky: r.isRisky || r.details?.isRisky || false,
       timestamp: r.createdAt.getTime(),
     })));
   } catch (err) {
