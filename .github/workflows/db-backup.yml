@@ -1,1 +1,42 @@
+name: Database Backup
 
+on:
+  schedule:
+    - cron: '0 2 */3 * *'  # Every 3 days at 2:00 AM UTC
+  workflow_dispatch:         # Allow manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          mkdir -p backups
+          FILENAME="backups/backup_$(date +%Y-%m-%d).sql"
+          pg_dump "$DATABASE_URL" > "$FILENAME"
+          echo "Backup saved to $FILENAME"
+          ls -lh "$FILENAME"
+
+      - name: Upload backup as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backups/
+          retention-days: 30  # Keep for 30 days
+
+      - name: Backup summary
+        run: |
+          echo "✅ Backup completed at $(date)"
+          echo "File: backups/backup_$(date +%Y-%m-%d).sql"
+          echo "Size: $(du -sh backups/backup_$(date +%Y-%m-%d).sql | cut -f1)"
