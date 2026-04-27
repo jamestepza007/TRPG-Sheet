@@ -158,7 +158,7 @@ export const AGENDAS = [
   },
   {
     id: 'BIRDSONG',
-    name: 'BIRDSONG',
+    name: 'SONGBIRD',
     items: '► Get someone to do your bidding\n► Do something selfless',
     abilities: [
       { name: 'Codependency', description: 'When someone sets you up, you can trade 1 stress around (from you to them, or vice versa).' },
