@@ -15,6 +15,16 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import CainCharacterPage from './pages/CainCharacterPage.jsx';
 import CainGMSheet from './pages/CainGMSheet.jsx';
 
+function PublicOnlyRoute({ children }) {
+  const { user, loading } = useAuthStore();
+  // If no token at all, let through immediately without waiting for loading
+  const hasToken = !!localStorage.getItem('token');
+  if (loading && !hasToken) return children; // no token = not logged in, show page
+  if (loading) return <div style={{ textAlign: 'center', paddingTop: 80, color: '#555' }}>Loading…</div>;
+  if (user) return <Navigate to="/" replace />;
+  return children;
+}
+
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuthStore();
   const isAuthenticated = !!user;
@@ -73,7 +83,7 @@ export default function App() {
       <AudioSettings />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
         <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/characters/cain/:id" element={<ProtectedRoute><CainCharacterPage /></ProtectedRoute>} />
         <Route path="/campaigns/cain/:id" element={<ProtectedRoute roles={['GM','ADMIN']}><CainGMSheet /></ProtectedRoute>} />

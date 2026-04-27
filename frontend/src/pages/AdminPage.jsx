@@ -14,7 +14,8 @@ export default function AdminPage() {
   const [tab, setTab] = useState('users'); // 'users' | 'webhooks' | 'bgm' | 'invites'
   const [invites, setInvites] = useState([]);
   const [newInvite, setNewInvite] = useState({ maxUses: 1, note: '' });
-  const [whPermUser, setWhPermUser] = useState(null); // userId being edited for webhook perms
+  const [whPopupUser, setWhPopupUser] = useState(null); // user object for webhook popup
+  const [whSearch, setWhSearch] = useState('');
   const [bgmTracks, setBgmTracks] = useState([]);
   const [newBgm, setNewBgm] = useState({ label: '', youtubeId: '' });
   const [editBgm, setEditBgm] = useState(null); // {id, label, youtubeId}
@@ -153,8 +154,83 @@ export default function AdminPage() {
   const acc = '#c9a84c';
   const roleBadge = (role) => <span className={`badge badge-${role.toLowerCase()}`}>{role}</span>;
 
+  // ── Webhook Permission Popup ──────────────────────────────────────
+  const WebhookPopup = () => {
+    if (!whPopupUser) return null;
+    const filtered = webhooks.filter(w =>
+      !whSearch.trim() || w.label.toLowerCase().includes(whSearch.toLowerCase())
+    );
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        onClick={() => { setWhPopupUser(null); setWhSearch(''); }}>
+        <div style={{ background: '#111', border: '1px solid #333', borderRadius: 12, maxWidth: 500, width: '92%', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+          onClick={e => e.stopPropagation()}>
+          {/* Header */}
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #222' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: 14, color: acc, marginBottom: 4 }}>
+              🔔 Webhook — {whPopupUser.username}
+            </div>
+            <input
+              autoFocus
+              value={whSearch}
+              onChange={e => setWhSearch(e.target.value)}
+              placeholder="ค้นหา webhook..."
+              style={{ width: '100%', background: '#1a1a1a', border: '1px solid #333', borderRadius: 6, padding: '7px 12px', color: '#eee', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+          {/* Webhook list */}
+          <div style={{ overflowY: 'auto', padding: '8px 0', flex: 1 }}>
+            {filtered.length === 0 && <div style={{ color: '#555', padding: '20px', textAlign: 'center', fontSize: 12 }}>ไม่พบ webhook</div>}
+            {filtered.map(w => {
+              const allowed = Array.isArray(w.allowedUsers) ? w.allowedUsers.includes(whPopupUser.id) : true;
+              const isOpenAll = !w.allowedUsers; // null = all
+              const cur = Array.isArray(w.allowedUsers) ? w.allowedUsers : [];
+              return (
+                <div key={w.id}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px', borderBottom: '1px solid #1a1a1a', cursor: 'pointer', background: allowed ? 'rgba(201,168,76,0.05)' : 'transparent' }}
+                  onClick={() => {
+                    if (isOpenAll) {
+                      // Convert to specific list excluding this user
+                      const allExcept = users.filter(u => u.id !== whPopupUser.id).map(u => u.id);
+                      updateWebhookPerms(w.id, allExcept);
+                    } else {
+                      const next = allowed ? cur.filter(id => id !== whPopupUser.id) : [...cur, whPopupUser.id];
+                      updateWebhookPerms(w.id, next.length === 0 ? [] : next);
+                    }
+                  }}>
+                  {/* Toggle */}
+                  <div style={{ width: 32, height: 18, borderRadius: 9, background: allowed ? acc : '#333', position: 'relative', flexShrink: 0, transition: 'background 0.2s', cursor: 'pointer' }}>
+                    <div style={{ position: 'absolute', top: 2, left: allowed ? 15 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: allowed ? '#eee' : '#555', fontSize: 13, fontFamily: 'Cinzel, serif' }}>{w.label}</div>
+                    <div style={{ color: '#333', fontSize: 10, fontFamily: 'monospace' }}>{w.url.slice(0, 50)}...</div>
+                  </div>
+                  <div style={{ fontSize: 10, color: isOpenAll ? '#4ade80' : allowed ? acc : '#444' }}>
+                    {isOpenAll ? '🌐 ทุกคน' : allowed ? '✓ เข้าถึงได้' : '✕ ไม่มีสิทธิ์'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Footer */}
+          <div style={{ padding: '12px 20px', borderTop: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button onClick={() => { updateWebhookPerms(null, null); /* reset all */ }}
+              style={{ fontSize: 11, color: '#555', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+            </button>
+            <button onClick={() => { setWhPopupUser(null); setWhSearch(''); }}
+              style={{ padding: '6px 20px', background: '#1a1a1a', border: '1px solid #333', borderRadius: 6, color: '#aaa', cursor: 'pointer', fontSize: 12, fontFamily: 'Cinzel, serif' }}>
+              CLOSE
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="page">
+      <WebhookPopup />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
           <h1 className="title">Admin Panel</h1>
@@ -218,6 +294,8 @@ export default function AdminPage() {
                     <td style={{ padding: '12px 16px' }}>
                       <div className="flex gap-2">
                         <button className="btn-ghost btn-sm" onClick={() => openEdit(u)}>Edit</button>
+                        <button className="btn-ghost btn-sm" onClick={() => { setWhPopupUser(u); setWhSearch(''); }}
+                          style={{ borderColor: '#c9a84c44', color: '#c9a84c' }}>🔔 Webhook</button>
                         <button className="btn-danger btn-sm" onClick={() => deleteUser(u.id)}>Delete</button>
                       </div>
                     </td>

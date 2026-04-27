@@ -19,6 +19,11 @@ export const useAuthStore = create((set) => ({
     set({ user: null, token: null, loading: false });
   },
 
+  setAuth: (user, token) => {
+    localStorage.setItem('token', token);
+    set({ user, token, loading: false });
+  },
+
   fetchMe: async () => {
     try {
       const { data } = await api.get('/auth/me');
