@@ -6,6 +6,7 @@ import { getSystem } from '../utils/systems.js';
 import CainDiceRoller from '../components/CainDiceRoller.jsx';
 import toast from 'react-hot-toast';
 import FontSizeControl from '../components/FontSizeControl.jsx';
+import StickerLayer from '../components/StickerLayer.jsx';
 import { AGENDAS, BLASPHEMIES, getAllBlasphemyPowers } from '../utils/cainData.js';
 import { VIRTUES } from '../utils/virtueData.js';
 import { VIRTUES_HARP, BOUND_WEAPON_ENHANCEMENTS } from '../utils/virtueDataHarp.js';
@@ -692,6 +693,8 @@ export default function CainCharacterPage() {
   const [sheet, setSheet] = useState({});
   const [saveStatus, setSaveStatus] = useState('saved');
   const [agendaAbilityPopup, setAgendaAbilityPopup] = useState(false);
+  const [stickers, setStickers] = useState([]);
+  const pageRef = useRef(null);
   const [bondAbilityPopup, setBondAbilityPopup] = useState(false);
   const [weaponEnhancementPopup, setWeaponEnhancementPopup] = useState(false);
   const [observedPowerPopup, setObservedPowerPopup] = useState(null); // null or index 0-4
@@ -753,6 +756,7 @@ export default function CainCharacterPage() {
       const merged = { ...defaults, ...res.data.sheetData };
       sheetRef.current = merged;
       setSheet(merged);
+      if (merged.stickers) setStickers(merged.stickers);
     } catch { toast.error('Character not found'); navigate('/'); }
   };
 
@@ -807,7 +811,15 @@ export default function CainCharacterPage() {
   const statusLabel = { saved: '■ FILED', saving: '◌ FILING...', dirty: '○ UNSAVED', error: '✕ ERROR' }[saveStatus];
 
   return (
-    <div style={{ background: '#d4cfc4', minHeight: '100vh', padding: '20px' }}>
+    <div ref={pageRef} style={{ background: '#d4cfc4', minHeight: '100vh', padding: '20px', position: 'relative' }}>
+      <StickerLayer
+        stickers={stickers}
+        containerRef={pageRef}
+        onChange={newStickers => {
+          setStickers(newStickers);
+          update('stickers', newStickers);
+        }}
+      />
       <style>{`
         input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
         textarea { resize: vertical; color: #1a1a1a !important; background-color: rgba(0,0,0,0.03) !important; }
@@ -1455,7 +1467,7 @@ export default function CainCharacterPage() {
         </div> {/* end LEFT COLUMN */}
 
         {/* ── RIGHT COLUMN: Party + Dice Roller (sticky) ── */}
-        <div style={{ position: 'sticky', top: 12, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ position: 'sticky', top: 12, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 10, zIndex: 80 }}>
 
           {/* Party Panel */}
           {partyData && (

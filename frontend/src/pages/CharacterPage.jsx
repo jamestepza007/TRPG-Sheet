@@ -6,6 +6,7 @@ import { getSystem } from '../utils/systems.js';
 import DiceRoller from '../components/DiceRoller.jsx';
 import toast from 'react-hot-toast';
 import FontSizeControl from '../components/FontSizeControl.jsx';
+import StickerLayer from '../components/StickerLayer.jsx';
 import { DW_CLASSES, getDWClass } from '../utils/dwData.js';
 
 // ── Portrait Crop Modal ─────────────────────────────────────────
@@ -440,6 +441,7 @@ export default function CharacterPage() {
   const [rollTrigger, setRollTrigger] = useState(0);
   const [cropSrc, setCropSrc] = useState(null); // portrait crop modal
   const [partyData, setPartyData] = useState(null);
+  const [stickers, setStickers] = useState([]);
   const [editingName, setEditingName] = useState(false);
   const [movePopupOpen, setMovePopupOpen] = useState(false);
   const [spellPopupOpen, setSpellPopupOpen] = useState(false);
@@ -447,6 +449,7 @@ export default function CharacterPage() {
   const sseRef = useRef(null);
   const [activeTab, setActiveTab] = useState('sheet'); // 'sheet' | 'notes'
   const autoSaveTimer = useRef(null);
+  const pageRef = useRef(null);
   const sheetRef = useRef({});
   const charRef = useRef(null);
 
@@ -505,6 +508,7 @@ export default function CharacterPage() {
       setCharacter(res.data);
       const defaults = { level: 1, xp: 0, maxHP: 10, currentHP: 10, maxStamina: 10, currentStamina: 10, maxMana: 10, currentMana: 10, armor: 0, class: '', race: '', moves: '', advancedMoves: '', gear: '', bonds: '', notes: '', spells: '', portrait: '' };
       const merged = { ...defaults, ...res.data.sheetData };
+      if (merged.stickers) setStickers(merged.stickers);
       sheetRef.current = merged;
       setSheet(merged);
       setSystem(getSystem(res.data.system));
@@ -602,7 +606,15 @@ export default function CharacterPage() {
       {cropSrc && <PortraitCropModal imageUrl={cropSrc} onConfirm={handleCropConfirm} onCancel={handleCropCancel} />}
       <input id="portrait-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePortraitFile} />
 
-      <div className="page">
+      <div className="page" ref={pageRef} style={{ position: 'relative' }}>
+        <StickerLayer
+          stickers={stickers}
+          containerRef={pageRef}
+          onChange={newStickers => {
+            setStickers(newStickers);
+            update('stickers', newStickers);
+          }}
+        />
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: `1px solid ${acc}33` }}>
           <div>
