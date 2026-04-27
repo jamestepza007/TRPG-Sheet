@@ -11,12 +11,15 @@ export default function AdminPage() {
   const [editUser, setEditUser] = useState(null);
   const [form, setForm] = useState({ username: '', password: '', role: 'PLAYER' });
   const [newWh, setNewWh] = useState({ label: '', url: '' });
-  const [tab, setTab] = useState('users'); // 'users' | 'webhooks' | 'bgm'
+  const [tab, setTab] = useState('users'); // 'users' | 'webhooks' | 'bgm' | 'invites'
+  const [invites, setInvites] = useState([]);
+  const [newInvite, setNewInvite] = useState({ maxUses: 1, note: '' });
+  const [whPermUser, setWhPermUser] = useState(null); // userId being edited for webhook perms
   const [bgmTracks, setBgmTracks] = useState([]);
   const [newBgm, setNewBgm] = useState({ label: '', youtubeId: '' });
   const [editBgm, setEditBgm] = useState(null); // {id, label, youtubeId}
 
-  useEffect(() => { fetchUsers(); fetchWebhooks(); fetchBgm(); }, []);
+  useEffect(() => { fetchUsers(); fetchWebhooks(); fetchBgm(); fetchInvites(); }, []);
 
   const fetchUsers = async () => {
     const res = await api.get('/users');
@@ -31,6 +34,42 @@ export default function AdminPage() {
   const fetchBgm = async () => {
     const res = await api.get('/bgm');
     setBgmTracks(res.data || []);
+  };
+
+  const fetchInvites = async () => {
+    try {
+      const res = await api.get('/invites');
+      setInvites(res.data);
+    } catch {}
+  };
+
+  const createInvite = async () => {
+    try {
+      const res = await api.post('/invites', { maxUses: parseInt(newInvite.maxUses) || 1, note: newInvite.note });
+      setInvites(p => [res.data, ...p]);
+      setNewInvite({ maxUses: 1, note: '' });
+      toast.success('Invite code created!');
+    } catch { toast.error('Failed'); }
+  };
+
+  const deleteInvite = async (id) => {
+    await api.delete(`/invites/${id}`).catch(() => {});
+    setInvites(p => p.filter(i => i.id !== id));
+    toast.success('Deleted');
+  };
+
+  const copyInviteLink = (code) => {
+    const url = `${window.location.origin}/register?code=${code}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied!');
+  };
+
+  const updateWebhookPerms = async (webhookId, allowedUsers) => {
+    try {
+      await api.put(`/webhooks/${webhookId}/permissions`, { allowedUsers });
+      fetchWebhooks();
+      toast.success('Permissions updated!');
+    } catch { toast.error('Failed'); }
   };
 
   const addBgmTrack = async (e) => {
@@ -125,7 +164,7 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid #2a2a2a', paddingBottom: 0 }}>
-        {[['users','👥 Users'], ['webhooks','🔔 Discord Webhooks'], ['bgm','🎵 BGM Tracks']].map(([key, label]) => (
+        {[['users','👥 Users'], ['invites','🔑 Invite Codes'], ['webhooks','🔔 Discord Webhooks'], ['bgm','🎵 BGM Tracks']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
             style={{ background: 'none', border: 'none', borderBottom: tab === key ? `2px solid ${acc}` : '2px solid transparent', color: tab === key ? acc : '#555', fontFamily: 'Cinzel, serif', fontSize: 13, letterSpacing: '0.08em', padding: '10px 16px', cursor: 'pointer', marginBottom: -1, transition: 'color 0.2s' }}>
             {label}
@@ -269,6 +308,54 @@ export default function AdminPage() {
       )}
 
       {/* ── Webhooks tab ── */}
+      {/* ── Invites tab ── */}
+      {tab === 'invites' && (
+        <div>
+          {/* Create new invite */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div className="section-title" style={{ color: acc, marginBottom: 12 }}>🔑 สร้าง Invite Code ใหม่</div>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div>
+                <label>จำนวนครั้งที่ใช้ได้</label>
+                <input type="number" min="1" max="100" value={newInvite.maxUses}
+                  onChange={e => setNewInvite(p => ({ ...p, maxUses: e.target.value }))}
+                  style={{ width: 80 }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label>Note (optional)</label>
+                <input value={newInvite.note} onChange={e => setNewInvite(p => ({ ...p, note: e.target.value }))}
+                  placeholder="เช่น สำหรับ session 3..." />
+              </div>
+              <button className="btn-primary" onClick={createInvite}>+ สร้าง Code</button>
+            </div>
+          </div>
+
+          {/* Invite list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {invites.length === 0 && <div className="text-muted">ยังไม่มี invite code</div>}
+            {invites.map(inv => (
+              <div key={inv.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: 20, fontWeight: 700, color: acc, letterSpacing: '0.2em', minWidth: 100 }}>{inv.code}</div>
+                <div style={{ flex: 1 }}>
+                  {inv.note && <div style={{ fontSize: 12, color: '#aaa', marginBottom: 2 }}>{inv.note}</div>}
+                  <div style={{ fontSize: 11, color: inv.usedCount >= inv.maxUses ? '#f87171' : '#4ade80' }}>
+                    ใช้แล้ว {inv.usedCount} / {inv.maxUses} {inv.usedCount >= inv.maxUses ? '— เต็มแล้ว' : ''}
+                  </div>
+                </div>
+                <button onClick={() => copyInviteLink(inv.code)}
+                  style={{ padding: '6px 14px', background: '#1a1a1a', border: `1px solid ${acc}`, color: acc, borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: 'Cinzel, serif' }}>
+                  📋 Copy Link
+                </button>
+                <button onClick={() => deleteInvite(inv.id)}
+                  style={{ padding: '6px 12px', background: '#1a1a1a', border: '1px solid #f87171', color: '#f87171', borderRadius: 6, cursor: 'pointer', fontSize: 11 }}>
+                  ลบ
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {tab === 'webhooks' && (
         <>
           <div className="card" style={{ marginBottom: 24 }}>
@@ -312,8 +399,26 @@ export default function AdminPage() {
                   {webhooks.map(w => (
                     <tr key={w.id} style={{ borderBottom: '1px solid #1a1a1a' }}>
                       <td style={{ padding: '12px 16px', fontFamily: 'Cinzel, serif', fontSize: 14, color: acc }}>{w.label}</td>
-                      <td style={{ padding: '12px 16px', color: '#555', fontSize: 12, fontFamily: 'Share Tech Mono, monospace', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.url}</td>
+                      <td style={{ padding: '12px 16px', color: '#555', fontSize: 12, fontFamily: 'Share Tech Mono, monospace', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.url}</td>
                       <td style={{ padding: '12px 16px' }}>
+                        {/* Permission toggles per user */}
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 6 }}>
+                          <button onClick={() => updateWebhookPerms(w.id, null)}
+                            style={{ padding: '2px 8px', fontSize: 10, borderRadius: 4, cursor: 'pointer', border: '1px solid #444', background: !w.allowedUsers ? acc : 'transparent', color: !w.allowedUsers ? '#000' : '#666' }}>
+                            🌐 ทุกคน
+                          </button>
+                          {users.map(u => {
+                            const allowed = Array.isArray(w.allowedUsers) && w.allowedUsers.includes(u.id);
+                            const cur = Array.isArray(w.allowedUsers) ? w.allowedUsers : [];
+                            return (
+                              <button key={u.id}
+                                onClick={() => updateWebhookPerms(w.id, allowed ? cur.filter(id => id !== u.id) : [...cur, u.id])}
+                                style={{ padding: '2px 8px', fontSize: 10, borderRadius: 4, cursor: 'pointer', border: `1px solid ${allowed ? acc : '#333'}`, background: allowed ? acc + '22' : 'transparent', color: allowed ? acc : '#555' }}>
+                                {allowed ? '✓' : '+'} {u.username}
+                              </button>
+                            );
+                          })}
+                        </div>
                         <button className="btn-danger btn-sm" onClick={() => deleteWebhook(w.id)}>Delete</button>
                       </td>
                     </tr>

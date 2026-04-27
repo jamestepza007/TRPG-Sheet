@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
+import inviteRoutes from './routes/invites.js';
 import userRoutes from './routes/users.js';
 import characterRoutes from './routes/characters.js';
 import campaignRoutes from './routes/campaigns.js';
@@ -38,6 +39,7 @@ app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/invites', inviteRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/characters', characterRoutes);
 app.use('/api/campaigns', campaignRoutes);

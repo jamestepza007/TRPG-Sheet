@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './hooks/useAuth.js';
 import Navbar from './components/Navbar.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import RegisterPage from './pages/RegisterPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import CharacterPage from './pages/CharacterPage.jsx';
 import CampaignPage from './pages/CampaignPage.jsx';
@@ -72,6 +73,7 @@ export default function App() {
       <AudioSettings />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/characters/cain/:id" element={<ProtectedRoute><CainCharacterPage /></ProtectedRoute>} />
         <Route path="/campaigns/cain/:id" element={<ProtectedRoute roles={['GM','ADMIN']}><CainGMSheet /></ProtectedRoute>} />
