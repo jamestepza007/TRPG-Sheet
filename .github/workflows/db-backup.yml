@@ -3,33 +3,24 @@ name: Database Backup
 on:
   schedule:
     - cron: '0 2 */3 * *'  # Every 3 days at 2:00 AM UTC
-  workflow_dispatch:         # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   backup:
     runs-on: ubuntu-latest
+    container:
+      image: postgres:18  # Match Railway PostgreSQL version
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y curl ca-certificates
-          curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg > /dev/null
-          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client-18
-
       - name: Create backup
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGPASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           mkdir -p backups
           FILENAME="backups/backup_$(date +%Y-%m-%d).sql"
           pg_dump "$DATABASE_URL" > "$FILENAME"
-          echo "Backup saved to $FILENAME"
+          echo "✅ Backup saved: $FILENAME"
           ls -lh "$FILENAME"
 
       - name: Upload backup as artifact
@@ -37,10 +28,4 @@ jobs:
         with:
           name: db-backup-${{ github.run_id }}
           path: backups/
-          retention-days: 30  # Keep for 30 days
-
-      - name: Backup summary
-        run: |
-          echo "✅ Backup completed at $(date)"
-          echo "File: backups/backup_$(date +%Y-%m-%d).sql"
-          echo "Size: $(du -sh backups/backup_$(date +%Y-%m-%d).sql | cut -f1)"
+          retention-days: 30
