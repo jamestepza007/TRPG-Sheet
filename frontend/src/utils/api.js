@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-// VITE_API_URL must be set in Vercel environment variables
-// e.g. https://your-backend.railway.app/api
 const baseURL = import.meta.env.VITE_API_URL;
 
 if (!baseURL) {
@@ -22,8 +20,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    // Only redirect on 401 if we're NOT on the login page already
-    if (err.response?.status === 401 && !window.location.pathname.includes('/login')) {
+    const path = window.location.pathname;
+    if (err.response?.status === 401 && !path.includes('/login') && !path.includes('/register')) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
