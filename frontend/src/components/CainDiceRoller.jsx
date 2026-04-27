@@ -105,7 +105,9 @@ export default function CainDiceRoller({ sheet, system, characterName, campaignI
       min: 1,
       max: 6,
       details: res,
-    }).catch(() => {});
+      riskDie: riskDie || null,
+      isRisky: isRisky || false,
+    }).then(r => console.log('[DICE] saved:', r?.data)).catch(e => console.error('[DICE] error:', e?.response?.data || e?.message || e));
 
     // Discord
     if (sendToDiscord && selectedWebhook) {
