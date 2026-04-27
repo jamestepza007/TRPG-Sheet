@@ -349,6 +349,21 @@ function AgendaAbilityPopup({ agendaId, onSelect, onClose }) {
   );
 }
 
+
+const HIGH_BLASPHEMY_DATA = {
+  Law:       { col: "#00c8b4", powers: ["Instant, CAT area. Set a rule of physical reality in a circular area equal to CAT. Spend all remaining psyche bursts (min 1). Fill in: In the Court, ____ is/are _____. Choose one effect: grant up to three +1D to allies / instantly kill all humans in the area / slash a talisman by rolling PSYCHE (+1D, +1 slash on success) / make something specific less hard or risky."] },
+  Null:      { col: "#d4a800", powers: ["Instant, Charm, 1 scene. Spend all remaining psyche bursts (min 1). For the scene: completely immune to psychic phenomena and afflictions; cannot use or be affected by any blasphemy other than this one. Cannot be ended early."] },
+  "Immaculate Defiance of Heaven": { col: "#d4a800", powers: ["Permanent. Same as Null but permanent. No blasphemies, sin resets to 0, spend 1d3 stress instead of psyche burst for +1D on any action, fighting sins with mundane abilities is no longer hard (mundane abilities at half CAT), +1 max injury, lifespan extends by 10d10 years."] },
+  Entwine:   { col: "#c800a0", powers: ["Instant, 1 mission. Without spending a psyche burst, choose another willing exorcist. Stress/psyche bursts can be assigned to either person; telepathic communication at extreme distance; feel each other's strong emotions. Afflictions/hooks affect both; sin gained by either affects both; if either suffers sin overflow or instant death, the blasphemy breaks."] },
+  Strength:  { col: "#bb1111", powers: ["Charm, 1 scene. Spend all remaining psyche bursts (min 1). For the scene: mundane physical abilities equal to CAT; fighting sins with mundane forces is no longer hard; push any physical action to CAT+2 by gaining 2d3 stress. All weapons break after use unless tempered. At scene end, take an injury and become comatose until rest."] },
+  Veil:      { col: "#8800cc", powers: ["Instant, long. Spend all remaining psyche bursts. Instantly erase memory of humans/exorcists in CAT range. They become insensate for 11 seconds (+1D for ally). They forget everything for the last 77 seconds.", "Bond III extension: up to 10 min (1d3+1 stress) / up to 1 hour (+1d3+1 sin) / up to 10 hours (+lose important memory) / up to 1 day (+lower sin overflow cap by 2) / up to 10 days (+forget your name, change agendas) / full reset (cease to exist in everyone's memory)."] },
+  Shake:     { col: "#1166dd", powers: ["See PDF for full Shake blasphemy description."] },
+  "Iron Maiden": { col: "#888888", powers: ["Instant. Spend all remaining psyche bursts (min 1) and all remaining KP. Answer yes/no: Did you spend at least 2 Psyche bursts? / Did you spend at least 3 KP? / Are you in an open area visible from sky? For every yes, pick one: Iron Maiden arrives in close distance / arrives within seconds / arrives without complications.", "While worn: anything that would affect you affects Iron Maiden instead; cannot gain hooks or afflictions; still use blasphemy powers. Returns to orbit at scene end. Gains Customizations equal to half CAT chosen each mission."] },
+  Clarity:   { col: "#4a7a3a", powers: ["Charm, 1 scene. Only usable with 2+ injuries. Use ALL remaining psyche bursts (min 1). Roll additional risk die taking only the highest; +1D on actions to avoid/defend/react to danger; automatically succeed to flee conflict scene. When power ends all actions become hard until rest."] },
+  "Lucidity of the Broken Mind": { col: "#4a7a3a", powers: ["Permanent. +2 stress cap. When on brink of death, take -3 stress from all sources. Clarity also gains: a Foresight talisman with segments equal to injuries; while active, slash once to have you or ally avoid any external harm reducing stress by 3. When fully slashed, Clarity ends early."] },
+  Guillotine: { col: "#7a4a00", powers: ["Instant, CAT Range. Spend ALL remaining psyche bursts (min 1). Summon Guillotine to a visible point in range, destroying area equal to half CAT. Roll PSYCHE for severe damage to one foe and 1 slash to every other foe in area.", "Bonus dice per YES (max half CAT+3): Only sentient being in area? / Feel empathy for target? / Half+ of execution talisman slashed? / Target grieving? / All 3 trauma questions answered (sins)? / Plan on executing sin? For each YES take 1 stress (or 3 to auto-succeed). For each NO take 2 stress."] },
+};
+
 // ── Observed Power Popup ─────────────────────────────────────────
 
 // ── Blasphemy color map (4 colors from PDF) ─────────────────────
@@ -582,6 +597,41 @@ function VirtueBondPopup({ onSelect, onClose }) {
 
 
 // ── Weapon Enhancement Popup ─────────────────────────────────────
+const WEAPON_TRACK_COLORS = {
+  // STEALTH track — blue/grey border (p.65 top-left)
+  'Gentle Silence': '#4a7a9a', 'Moon in The Winter': '#4a7a9a',
+  // DEATH track — dark grey/black border (p.65 bottom-left)
+  'Grave Bearer': '#333333', 'Last Rites': '#333333', 'Execution': '#333333', 'Nullification Ritual': '#333333',
+  // HEAVY track — red border (p.65 center)
+  'Heavy Soul': '#cc2222',
+  // ENVY track — gold/yellow border (p.65 top-right)
+  'Envy': '#b89000', 'Two-Headed Serpent': '#b89000',
+  // GLITTER track — magenta/pink border (p.66)
+  'Glitter': '#cc00aa', 'Mania': '#cc00aa', 'Deluxe Deviant Death Monarch': '#cc00aa',
+  // HUNGERING — red border (p.66 left)
+  'Hungering': '#aa0000',
+  // MENACING track — teal/cyan border (p.66 left)
+  'Menacing': '#008899', 'Justicar': '#008899',
+  // HEAVEN'S TOUCH — yellow border (p.66 center)
+  "Heaven's Touch": '#ccaa00',
+  // DEADWEIGHT track — grey border (p.66 right)
+  'Deadweight': '#666666', 'Nihility': '#666666', 'Call of the Void': '#666666',
+  // SENSITIVE track — dark border (p.66 right)
+  'Sensitive': '#888888', 'Spiked-Steel': '#888888', 'Iron Maiden': '#888888',
+  // DEATH DEFIER — grey border (p.66 far right)
+  'Death Defier': '#777777',
+  // HATE track — dark/black border with white text (p.67 bottom-left)
+  'Hate': '#222222', 'Vitriol': '#222222', 'Rot Unfurling': '#222222',
+  // SERRATED track — green border (p.67)
+  'Serrated': '#336600', "Glutton's Bloodletter": '#336600',
+  // GOLD-PLATED — gold border (p.67)
+  'Gold-Plated': '#cc9900',
+  // EXPLOSIVE — red border (p.67)
+  'Explosive': '#dd2200',
+  // AMORPHOUS track — purple border (p.67 right)
+  'Amorphous': '#7700aa', 'Evolution': '#7700aa',
+};
+
 function WeaponEnhancementPopup({ onSelect, onClose }) {
   const [search, setSearch] = useState('');
   const filtered = search.trim()
@@ -604,20 +654,24 @@ function WeaponEnhancementPopup({ onSelect, onClose }) {
             style={{ width: '100%', padding: '6px 8px', border: '1px solid #999', background: '#fff', fontFamily: "'Courier New', monospace", fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
         </div>
         <div style={{ overflowY: 'auto', padding: '8px 16px', flex: 1 }}>
-          {filtered.map((e, i) => (
-            <div key={i}
-              onClick={() => { onSelect(e.name + ' (Cost: ' + e.cost + (e.prereq ? ', Req: ' + e.prereq : '') + ')\n' + e.description); onClose(); }}
-              style={{ padding: '7px 10px', marginBottom: 5, background: 'rgba(0,0,0,0.03)', border: '1px solid #ccc', cursor: 'pointer' }}
-              onMouseEnter={ev => ev.currentTarget.style.background = 'rgba(0,0,0,0.1)'}
-              onMouseLeave={ev => ev.currentTarget.style.background = 'rgba(0,0,0,0.03)'}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{e.name}</div>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, background: '#1a1a1a', color: '#f2ede3', padding: '1px 5px' }}>COST {e.cost}</div>
-                {e.prereq && <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: '#888' }}>Req: {e.prereq}</div>}
+          {filtered.map((e, i) => {
+            const col = WEAPON_TRACK_COLORS[e.name] || '#666';
+            const lightBg = col + '18';
+            return (
+              <div key={i}
+                onClick={() => { onSelect(e.name.toUpperCase() + ' (Cost: ' + e.cost + (e.prereq ? ', Req: ' + e.prereq : '') + ')\n' + e.description); onClose(); }}
+                style={{ padding: '7px 10px', marginBottom: 5, background: lightBg, border: `1px solid ${col}66`, cursor: 'pointer', transition: 'background 0.1s' }}
+                onMouseEnter={ev => ev.currentTarget.style.background = col + '33'}
+                onMouseLeave={ev => ev.currentTarget.style.background = lightBg}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <div style={{ fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: col }}>{e.name}</div>
+                  <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, background: col, color: '#fff', padding: '1px 6px' }}>COST {e.cost}</div>
+                  {e.prereq && <div style={{ fontFamily: "'Courier New', monospace", fontSize: 9, color: '#888' }}>← {e.prereq}</div>}
+                </div>
+                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: '#444', lineHeight: 1.4 }}>{e.description}</div>
               </div>
-              <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: '#444', lineHeight: 1.4 }}>{e.description}</div>
-            </div>
-          ))}
+            );
+          })}
           {filtered.length === 0 && (
             <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: '#888', padding: '20px 0', textAlign: 'center' }}>ไม่พบ enhancement ที่ตรงกัน</div>
           )}
@@ -757,6 +811,8 @@ export default function CainCharacterPage() {
       <style>{`
         input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
         textarea { resize: vertical; color: #1a1a1a !important; background-color: rgba(0,0,0,0.03) !important; }
+        .bond-input::placeholder { color: rgba(242,237,227,0.45) !important; }
+        .bond-input { color: #f2ede3 !important; }
         input { color: #1a1a1a !important; }
         * { box-sizing: border-box; }
       `}</style>
@@ -802,56 +858,121 @@ export default function CainCharacterPage() {
             {/* LEFT COL */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-              {/* VIRTUE */}
+              {/* VIRTUE BONDS */}
               <div style={{ border: `1px solid ${C.borderDark}`, padding: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <div style={{ fontFamily: C.fontSans, fontSize: 13, fontWeight: 700, letterSpacing: '0.15em' }}>VIRTUE</div>
-                  <input value={sheet.virtueName || ''} onChange={e => update('virtueName', e.target.value)}
-                    placeholder="Bond name"
-                    style={{ flex: 1, background: '#e0dbd0', border: 'none', borderRadius: 2, fontFamily: C.font, fontSize: 12, color: C.dark, padding: '3px 8px', outline: 'none' }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div style={{ fontFamily: C.fontSans, fontSize: 13, fontWeight: 700, letterSpacing: '0.15em' }}>VIRTUE BONDS</div>
+                  <button onClick={() => {
+                    const slots = [...(sheet.virtueSlots || [{name:'',desc:''}])];
+                    slots.push({name:'',desc:''});
+                    update('virtueSlots', slots);
+                  }} style={{ background: C.dark, color: C.bg, border: 'none', borderRadius: 0, padding: '1px 7px', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer' }}>+ ADD</button>
                 </div>
-                <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 8 }}>
-                  Describe registered Virtue bond here. Bond level starts at 0 and increases with each successful mission. Ignore strictures by taking 1d3 nonlethal stress.
+                <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 10 }}>
+                  Bond level starts at 0 and increases with each successful mission. Ignore strictures by taking 1d3 nonlethal stress.
                 </div>
-                <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.12em', color: C.mid, marginBottom: 4 }}>STRICTURES</div>
-                <textarea value={sheet.virtueStrictures || ''} onChange={e => update('virtueStrictures', e.target.value)}
-                  rows={3} placeholder="Strictures..."
-                  style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box' }} />
+                {(sheet.virtueSlots || [{name:'',desc:''}]).map((slot, i) => {
+                  const ALL_V = [...VIRTUES, ...VIRTUES_HARP];
+                  const picked = ALL_V.find(v => v.name === slot.name);
+                  const VCOL = { Justice:'#00c8b4', Faith:'#d4a800', Charity:'#c800a0', Fortitude:'#bb1111', Hope:'#8800cc', Prudence:'#1166dd', Chastity:'#888888', Sobriety:'#4a7a3a', Absolution:'#7a4a00' };
+                  const col = VCOL[slot.name] || C.borderDark;
+                  return (
+                    <div key={i} style={{ marginBottom: 10, border: `1px solid ${col}44`, padding: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        {/* Styled same as AGND dropdown */}
+                        <div style={{ flex: 1, position: 'relative' }}>
+                          <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', color: C.mid, marginBottom: 2 }}>VIRTUE:</div>
+                          <div style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${col || '#999'}`, paddingBottom: 2 }}>
+                            <select value={slot.name || ''} onChange={e => {
+                              const slots = [...(sheet.virtueSlots || [{name:'',desc:''}])];
+                              const vData = ALL_V.find(v => v.name === e.target.value);
+                              slots[i] = { name: e.target.value, desc: vData ? vData.strictures.join('\n') : '' };
+                              update('virtueSlots', slots);
+                            }} style={{ flex: 1, background: 'transparent', border: 'none', fontFamily: C.font, fontSize: 13, color: col || C.dark, outline: 'none', padding: '2px 0', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}>
+                              <option value="" style={{ color: C.dark }}>— เลือก Virtue —</option>
+                              {['Justice','Faith','Charity','Fortitude','Hope','Prudence','Chastity','Sobriety','Absolution','Custom'].map(n => (
+                                <option key={n} value={n} style={{ color: C.dark }}>{n}</option>
+                              ))}
+                            </select>
+                            <span style={{ fontSize: 8, color: '#888', pointerEvents: 'none' }}>▾</span>
+                          </div>
+                        </div>
+                        {(sheet.virtueSlots || []).length > 1 && (
+                          <button onClick={() => {
+                            const slots = [...(sheet.virtueSlots || [{name:'',desc:''}])];
+                            slots.splice(i, 1);
+                            update('virtueSlots', slots);
+                          }} style={{ background: 'transparent', border: 'none', color: '#aaa', fontSize: 14, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+                        )}
+                      </div>
+                      <div style={{ fontFamily: C.fontSans, fontSize: 7, fontWeight: 700, letterSpacing: '0.1em', color: C.mid, marginBottom: 2 }}>STRICTURES</div>
+                      <textarea value={slot.desc || ''} onChange={e => {
+                        const slots = [...(sheet.virtueSlots || [{name:'',desc:''}])];
+                        slots[i] = { ...slot, desc: e.target.value };
+                        update('virtueSlots', slots);
+                      }} rows={2} placeholder="Strictures..."
+                        style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 9, color: C.dark, padding: 3, resize: 'vertical', boxSizing: 'border-box' }} />
+                    </div>
+                  );
+                })}
               </div>
 
               {/* HIGH BLASPHEMY */}
-              <div style={{ border: `1px solid ${C.borderDark}`, padding: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <div style={{ fontFamily: C.fontSans, fontSize: 13, fontWeight: 700, letterSpacing: '0.15em', lineHeight: 1.2 }}>HIGH<br/>BLASPHEMY</div>
-                  <input value={sheet.highBlasphemyName || ''} onChange={e => update('highBlasphemyName', e.target.value)}
-                    placeholder="Blasphemy name"
-                    style={{ flex: 1, background: '#e0dbd0', border: 'none', borderRadius: 2, fontFamily: C.font, fontSize: 12, color: C.dark, padding: '3px 8px', outline: 'none' }} />
-                </div>
-                <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 8 }}>
-                  Describe registered High Blasphemy here. Some high blasphemy powers are changed based on current exorcist's bond level.
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                  <textarea value={sheet.highBlasphemyDesc || ''} onChange={e => update('highBlasphemyDesc', e.target.value)}
-                    rows={5} placeholder="Description..."
-                    style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box' }} />
-                  <div>
-                    <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, color: C.mid, marginBottom: 4, padding: '2px 6px', background: '#ddd' }}>HIGH BLASPHEMY:</div>
-                    <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, padding: '4px 6px', border: `1px solid ${C.border}`, lineHeight: 1.5 }}>
-                      High blasphemies typically require spending all your remaining <strong>psyche bursts</strong>, with a minimum of 1. Sin cannot be used to compensate for these bursts.
+              {(() => {
+                const hbName = sheet.highBlasphemyName || '';
+                const hbData = HIGH_BLASPHEMY_DATA[hbName];
+                const hbCol = hbData?.col || C.borderDark;
+                return (
+                  <div style={{ border: `1px solid ${hbCol}66`, padding: 14 }}>
+                    {/* Header + Dropdown */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                      <div style={{ fontFamily: C.fontSans, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>HIGH<br/>BLASPHEMY</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${hbCol || '#999'}`, paddingBottom: 2 }}>
+                          <select value={hbName} onChange={e => {
+                            const picked = HIGH_BLASPHEMY_DATA[e.target.value];
+                            update('highBlasphemyName', e.target.value);
+                            if (picked) {
+                              picked.powers.forEach((p, idx) => update('highBlasphemyPower' + (idx+1), p));
+                              for (let idx = picked.powers.length + 1; idx <= 4; idx++) update('highBlasphemyPower' + idx, '');
+                            }
+                          }} style={{ flex: 1, background: 'transparent', border: 'none', fontFamily: C.font, fontSize: 13, color: hbCol || C.dark, outline: 'none', padding: '2px 0', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', fontWeight: 700 }}>
+                            <option value="" style={{ color: C.dark }}>— เลือก High Blasphemy —</option>
+                            {Object.keys(HIGH_BLASPHEMY_DATA).map(n => (
+                              <option key={n} value={n} style={{ color: C.dark }}>{n}</option>
+                            ))}
+                            <option value="Custom" style={{ color: C.dark }}>✏ Custom</option>
+                          </select>
+                          <span style={{ fontSize: 8, color: '#888', pointerEvents: 'none' }}>▾</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginBottom: 8, lineHeight: 1.4 }}>
+                      High blasphemies typically require spending all your remaining <strong>psyche bursts</strong> (min 1). Sin cannot be used to compensate for these bursts.
+                    </div>
+                    {/* Description textarea */}
+                    <textarea value={sheet.highBlasphemyDesc || ''} onChange={e => update('highBlasphemyDesc', e.target.value)}
+                      rows={3} placeholder="Notes on this blasphemy..."
+                      style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${hbCol}44`, fontFamily: C.font, fontSize: 10, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box', marginBottom: 8 }} />
+                    {/* 4 power slots */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      {[1,2,3,4].map(n => (
+                        <div key={n}>
+                          <div style={{ fontFamily: C.fontSans, fontSize: 7, fontWeight: 700, color: hbCol || C.muted, letterSpacing: '0.1em', marginBottom: 2, borderLeft: `3px solid ${hbCol || C.border}`, paddingLeft: 4 }}>POWER {n}</div>
+                          <textarea value={sheet['highBlasphemyPower' + n] || ''} onChange={e => update('highBlasphemyPower' + n, e.target.value)}
+                            rows={4} placeholder={n <= (hbData?.powers?.length || 0) ? '' : 'Custom power...'}
+                            style={{ width: '100%', background: n <= (hbData?.powers?.length || 0) ? hbCol + '0d' : 'rgba(0,0,0,0.02)', border: `1px solid ${n <= (hbData?.powers?.length || 0) ? hbCol + '44' : C.border}`, fontFamily: C.font, fontSize: 9, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box' }} />
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  {[1, 2].map(n => (
-                    <div key={n}>
-                      <div style={{ fontFamily: C.fontSans, fontSize: 7, color: C.muted, letterSpacing: '0.12em', writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)', float: 'left', marginRight: 4, height: 80 }}>OBSERVED POWER</div>
-                      <textarea value={sheet[`highBlasphemyPower${n}`] || ''} onChange={e => update(`highBlasphemyPower${n}`, e.target.value)}
-                        rows={4} placeholder={`Power ${n}...`}
-                        style={{ width: 'calc(100% - 20px)', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box' }} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+                );
+              })()}
+
+            </div>
+
+            {/* RIGHT COL */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {/* EXORCIST BONDS */}
               <div style={{ border: `1px solid ${C.borderDark}`, padding: 14 }}>
@@ -864,13 +985,14 @@ export default function CainCharacterPage() {
                 </div>
                 {(sheet.exorcistBonds || [{name:'',slashes:0},{name:'',slashes:0},{name:'',slashes:0}]).map((bond, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, background: C.dark, padding: '6px 10px' }}>
-                    <div style={{ fontFamily: C.fontSans, fontSize: 9, color: C.bg, letterSpacing: '0.1em', flex: 1 }}>
+                    <div style={{ fontFamily: C.fontSans, fontSize: 9, letterSpacing: '0.1em', flex: 1 }}>
                       <input value={bond.name} onChange={e => {
                         const bonds = [...(sheet.exorcistBonds || [{name:'',slashes:0},{name:'',slashes:0},{name:'',slashes:0}])];
                         bonds[i] = {...bond, name: e.target.value};
                         update('exorcistBonds', bonds);
                       }} placeholder="EXORCIST BOND"
-                        style={{ background: 'transparent', border: 'none', outline: 'none', fontFamily: C.fontSans, fontSize: 9, color: C.bg, letterSpacing: '0.1em', width: '100%' }} />
+                        className="bond-input"
+                        style={{ background: 'transparent', border: 'none', outline: 'none', fontFamily: C.fontSans, fontSize: 9, color: '#f2ede3', letterSpacing: '0.1em', width: '100%' }} />
                     </div>
                     <div style={{ display: 'flex', gap: 2 }}>
                       {[0,1,2].map(j => (
@@ -878,16 +1000,12 @@ export default function CainCharacterPage() {
                           const bonds = [...(sheet.exorcistBonds || [{name:'',slashes:0},{name:'',slashes:0},{name:'',slashes:0}])];
                           bonds[i] = {...bond, slashes: bond.slashes === j+1 ? 0 : j+1};
                           update('exorcistBonds', bonds);
-                        }} style={{ width: 12, height: 18, borderRight: `2px solid ${j < bond.slashes ? C.bg : 'rgba(255,255,255,0.3)'}`, cursor: 'pointer' }} />
+                        }} style={{ width: 12, height: 18, borderRight: `2px solid ${j < bond.slashes ? '#f2ede3' : 'rgba(255,255,255,0.35)'}`, cursor: 'pointer' }} />
                       ))}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* RIGHT COL */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {/* BOND ABILITIES */}
               <div style={{ border: `1px solid ${C.borderDark}`, padding: 14 }}>
