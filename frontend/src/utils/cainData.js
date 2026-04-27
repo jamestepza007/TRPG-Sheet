@@ -90,7 +90,7 @@ export const AGENDAS = [
   },
   {
     id: 'SEEKER',
-    name: 'SEEKER',
+    name: 'MOTH',
     items: '► Uncover hidden or uncomfortable truths about the world.\n► Uncover hidden or uncomfortable truths about yourself.',
     abilities: [
       { name: 'Psyche Jewel', description: "When you or an ally answers a Sin's trauma question, regain 1 psyche burst, recover 1 sin, and erase 1 stress." },

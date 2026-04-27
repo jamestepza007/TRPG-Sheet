@@ -17,7 +17,7 @@ function applySize(size) {
     style.id = 'trpg-fontsize-style';
     document.head.appendChild(style);
   }
-  style.textContent = `textarea { font-size: ${size}px !important; }`;
+  style.textContent = `textarea:not(.sticker-textarea) { font-size: ${size}px !important; }`;
 }
 
 export default function FontSizeControl({ dark = false }) {

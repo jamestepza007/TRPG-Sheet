@@ -32,7 +32,8 @@ export default function CainDiceRoller({ sheet, system, characterName, campaignI
   const { user } = useAuthStore();
   const [baseDice, setBaseDice] = useState(1);
   const [bonusDice, setBonusDice] = useState(0);
-  const [mode, setMode] = useState('normal'); // normal | risky | hard
+  const [mode, setMode] = useState('normal');
+  const [isRisky, setRisky] = useState(false); // normal | risky | hard
   const [result, setResult] = useState(null);
   const [rolling, setRolling] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState('');
@@ -80,14 +81,14 @@ export default function CainDiceRoller({ sheet, system, characterName, campaignI
     let riskDie = null;
 
     // Risky: admin rolls 1 extra die — simulate with worst die
-    if (mode === 'risky') riskDie = Math.floor(Math.random() * 6) + 1;
+    if (isRisky) riskDie = Math.floor(Math.random() * 6) + 1;
 
     // Count successes
     const threshold = mode === 'hard' ? 6 : 4;
     const successes = pool.filter(d => d >= threshold).length;
 
     const res = {
-      pool, riskDie, successes, threshold, mode,
+      pool, riskDie, successes, threshold, mode: mode + (isRisky ? '+risky' : ''),
       totalDice, skillDice: getSkillDice(), bonusDice,
     };
 
@@ -185,15 +186,20 @@ export default function CainDiceRoller({ sheet, system, characterName, campaignI
           {/* Mode */}
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: C.mid, marginBottom: 6 }}>MODE:</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {['normal', 'risky', 'hard'].map(m => (
-                <button key={m} onClick={() => setMode(m)}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+              {['normal', 'hard'].map(m => (
+                <button key={m} onClick={() => setMode(prev => prev === m ? 'normal' : m)}
                   style={{ flex: 1, padding: '6px 4px', border: `1px solid ${C.borderDark}`, background: mode === m ? C.dark : 'transparent', color: mode === m ? C.bg : C.dark, fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer', textTransform: 'uppercase' }}>
                   {m}
                 </button>
               ))}
             </div>
-            {mode === 'risky' && <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginTop: 4 }}>Admin rolls risk die. On 1: bad thing happens.</div>}
+            {/* Risky — independent toggle */}
+            <button onClick={() => setRisky(r => !r)}
+              style={{ width: '100%', padding: '5px 4px', border: `1px solid ${isRisky ? C.red : C.borderDark}`, background: isRisky ? C.red + '22' : 'transparent', color: isRisky ? C.red : C.mid, fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <span style={{ width: 10, height: 10, border: `2px solid ${isRisky ? C.red : C.borderDark}`, background: isRisky ? C.red : 'transparent', display: 'inline-block', flexShrink: 0 }} />
+              RISKY — Admin rolls risk die
+            </button>
             {mode === 'hard' && <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, marginTop: 4 }}>Successes only on 6.</div>}
           </div>
         </div>
@@ -269,20 +275,12 @@ export default function CainDiceRoller({ sheet, system, characterName, campaignI
                 </div>
               </div>
 
-              {/* Risk die */}
-              {result.riskDie && (
-                <div style={{ marginBottom: 8, padding: '4px 6px', border: `1px solid ${C.red}`, background: result.riskDie === 1 ? C.red + '22' : 'transparent' }}>
-                  <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, color: C.mid }}>RISK DIE (Admin):</div>
-                  <div style={{ fontFamily: C.fontSans, fontSize: 20, fontWeight: 900, color: result.riskDie === 1 ? C.red : C.dark }}>
-                    {result.riskDie} {result.riskDie === 1 ? '⚠ BAD THING HAPPENS' : ''}
-                  </div>
-                </div>
-              )}
+              {/* Risk die — hidden from sheet, sent to Discord only */}
 
               {/* Mode reminder */}
               {result.mode !== 'normal' && (
                 <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, fontStyle: 'italic' }}>
-                  {result.mode === 'hard' ? 'Hard: only 6s count' : 'Risky: Admin rolled risk die'}
+                  {result.mode?.startsWith('hard') ? 'Hard: only 6s count' : 'Risky: Admin rolled risk die'}
                 </div>
               )}
             </div>
