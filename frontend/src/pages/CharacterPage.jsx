@@ -753,13 +753,13 @@ export default function CharacterPage() {
 
         {/* Character Sheet */}
         {activeTab === 'sheet' && (<>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }} className="dw-main-grid">
           {/* LEFT */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Info header */}
             <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${acc}22`, borderRadius: 8, padding: 20 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: 20, alignItems: 'start' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: 20, alignItems: 'start' }} className="dw-portrait-row">
                 {/* Portrait */}
                 <div style={{ cursor: 'pointer', position: 'relative' }} onClick={handlePortraitClick}
                   title="คลิกเพื่อเปลี่ยนรูป">
