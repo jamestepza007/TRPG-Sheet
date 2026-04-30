@@ -255,7 +255,12 @@ export default function DashboardPage() {
                   )}
                   <div style={{ color: '#888', fontSize: 12, textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>{char.system === 'CAIN'
                         ? `CAT ${['I','II','III','IV','V'][(char.sheetData?.cat || 1) - 1] || 'I'}`
-                        : `${char.sheetData?.class || '—'} · Lv.${char.sheetData?.level || 1}`
+                        : (() => {
+                  const cls = char.sheetData?.class;
+                  const customName = char.sheetData?.classCustomName;
+                  const className = cls === 'CUSTOM' ? (customName || 'Custom') : (cls || '—');
+                  return `${className} · Lv.${char.sheetData?.level || 1}`;
+                })()
                       }</div>
                   {char.system === 'CAIN' ? (
                     <div style={{ marginTop: 8 }}>

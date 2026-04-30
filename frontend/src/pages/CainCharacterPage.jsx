@@ -136,7 +136,7 @@ function CATDisplay({ cat, missions, onChange, onMissionsChange }) {
     { n: 5, label: 'V', threshold: 7 },
   ];
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       {levels.map(lv => (
         <div key={lv.n} onClick={() => onChange(lv.n)}
           style={{ width: 32, height: 32, border: `2px solid ${C.borderDark}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontFamily: C.fontSans, fontSize: 13, fontWeight: 700, background: cat >= lv.n ? C.dark : 'transparent', color: cat >= lv.n ? '#f2ede3' : C.dark, transition: 'all 0.15s', clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }}>
@@ -153,6 +153,7 @@ function CATDisplay({ cat, missions, onChange, onMissionsChange }) {
             style={{ width: 22, height: 22, border: `1px solid ${C.borderDark}`, background: 'transparent', fontFamily: C.font, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
         </div>
       </div>
+    <FontSizeControl />
     </div>
   );
 }
@@ -701,12 +702,6 @@ export default function CainCharacterPage() {
   const [partyData, setPartyData] = useState(null);
   const sseRef = useRef(null);
   const [activeTab, setActiveTab] = useState('sheet');
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
   const autoSaveTimer = useRef(null);
   const sheetRef = useRef({});
   const charRef = useRef(null);
@@ -818,7 +813,7 @@ export default function CainCharacterPage() {
   const statusLabel = { saved: '■ FILED', saving: '◌ FILING...', dirty: '○ UNSAVED', error: '✕ ERROR' }[saveStatus];
 
   return (
-    <div ref={pageRef} style={{ background: '#d4cfc4', minHeight: '100vh', padding: '20px', position: 'relative', overflowX: 'hidden', maxWidth: '100vw', boxSizing: 'border-box' }}>
+    <div ref={pageRef} style={{ background: '#d4cfc4', minHeight: '100vh', padding: '20px', position: 'relative' }}>
       <StickerLayer
         stickers={tabStickers[activeTab] || []}
         containerRef={pageRef}
@@ -977,7 +972,7 @@ export default function CainCharacterPage() {
                       rows={3} placeholder="Notes on this blasphemy..."
                       style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${hbCol}44`, fontFamily: C.font, fontSize: 10, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box', marginBottom: 8 }} />
                     {/* 4 power slots */}
-                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                       {[1,2,3,4].map(n => (
                         <div key={n}>
                           <div style={{ fontFamily: C.fontSans, fontSize: 7, fontWeight: 700, color: hbCol || C.muted, letterSpacing: '0.1em', marginBottom: 2, borderLeft: `3px solid ${hbCol || C.border}`, paddingLeft: 4 }}>POWER {n}</div>
@@ -1097,18 +1092,18 @@ export default function CainCharacterPage() {
         </div>
 
         {/* ── Main 2-col: left=content, right=dice roller ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr minmax(0, 300px)', gap: 16, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr minmax(0, 300px)', gap: 16, alignItems: 'start' }}>
         <div> {/* ── LEFT COLUMN ── */}
 
         {/* ── Row 1: ID Card + Skills ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 12 }}>
 
           {/* ID Card */}
           <SectionBox title="REGISTERED EXORCIST — ID CARD">
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '80px 1fr' : '160px 1fr', gap: 12, alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12, alignItems: 'start' }}>
               {/* Portrait */}
               <div onClick={handlePortraitClick} style={{ cursor: 'pointer', position: 'relative' }}>
-                <div style={{ width: isMobile ? '100%' : 160, height: isMobile ? 140 : 190, background: '#ccc', border: `2px solid ${C.borderDark}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <div style={{ width: 160, height: 190, background: '#ccc', border: `2px solid ${C.borderDark}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                   {sheet.portrait
                     ? <img src={sheet.portrait} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : <div style={{ textAlign: 'center', color: '#888' }}><div style={{ fontSize: 10, fontFamily: C.fontSans, letterSpacing: '0.1em' }}>AFFIX ID PHOTO</div><div style={{ fontSize: 9, marginTop: 4 }}>click to upload</div></div>
@@ -1126,15 +1121,22 @@ export default function CainCharacterPage() {
                       value={key === 'name' ? character.name : (sheet[key] || '')}
                       onChange={e => {
                         if (key === 'name') {
-                          setCharacter(c => ({ ...c, name: e.target.value }));
-                          update('name', e.target.value);
+                          const newName = e.target.value;
+                          setCharacter(c => {
+                            const updated = { ...c, name: newName };
+                            charRef.current = updated;
+                            return updated;
+                          });
+                          update('_characterName', newName);
                         } else {
                           update(key, e.target.value);
                         }
                       }}
                       onBlur={async e => {
                         if (key === 'name' && e.target.value.trim()) {
-                          await api.put(`/characters/${id}`, { name: e.target.value.trim() });
+                          const newName = e.target.value.trim();
+                          charRef.current = { ...charRef.current, name: newName };
+                          await api.put(`/characters/${id}`, { name: newName }).catch(() => {});
                         }
                       }}
                       style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 13, color: C.dark, outline: 'none', padding: '2px 0' }} />
@@ -1192,7 +1194,7 @@ export default function CainCharacterPage() {
                     />
                   )}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {[['SX', 'sx'], ['HT', 'ht'], ['WT', 'wt'], ['HAIR', 'hair'], ['EYES', 'eyes']].map(([lbl, key]) => (
                     <div key={key}>
                       <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, color: C.mid }}>{lbl}:</div>
@@ -1230,7 +1232,7 @@ export default function CainCharacterPage() {
         </div>
 
         {/* ── Row 2: Health + Psyche + Sin ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
 
           {/* Health */}
           <SectionBox title="HEALTH EVALUATION">
@@ -1300,7 +1302,7 @@ export default function CainCharacterPage() {
             </SectionBox>
 
             <SectionBox title="ACTION ASSESSMENT METRIC">
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 6, marginBottom: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 10 }}>
                 <div style={{ background: C.dark, color: C.bg, textAlign: 'center', padding: '6px 4px' }}>
                   <div style={{ fontFamily: C.fontSans, fontSize: 16, fontWeight: 900 }}>4+</div>
                   <div style={{ fontFamily: C.fontSans, fontSize: 7, letterSpacing: '0.1em' }}>SUCCESS</div>
@@ -1352,7 +1354,7 @@ export default function CainCharacterPage() {
         </div>
 
         {/* ── Row 3: Kit + Advancement ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
 
           {/* Kit */}
           <SectionBox title="REGISTERED KIT">
@@ -1414,7 +1416,7 @@ export default function CainCharacterPage() {
         </div>
 
         {/* ── Row 4: Agenda + Blasphemy ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
 
           <SectionBox title="REGISTERED ABILITIES — AGENDA">
             <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>Describe registered agenda here. Swap agendas between missions. Keep any bolded items.</div>
@@ -1477,7 +1479,7 @@ export default function CainCharacterPage() {
         </div> {/* end LEFT COLUMN */}
 
         {/* ── RIGHT COLUMN: Party + Dice Roller (sticky) ── */}
-        <div style={{ position: isMobile ? 'static' : 'sticky', top: 12, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 10, zIndex: 80 }}>
+        <div style={{ position: 'sticky', top: 12, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 10, zIndex: 80 }}>
 
           {/* Party Panel */}
           {partyData && (
