@@ -28,6 +28,19 @@ export const AGENDAS = [
     note: 'You may only pick this agenda if you have a sin mark. If it\'s your first agenda, you may start with a sin mark of your choice (still roll 1d6 for ability).',
   },
   {
+    id: 'DEMON',
+    name: 'DEMON',
+    items: '► Enrich yourself\n► Give something valuable away',
+    abilities: [
+      { name: 'Black Market Stims', description: 'You can spend up to 3 scrip a mission as psyche burst.' },
+      { name: 'Supplier Connections', description: 'You gain a 1 scrip discount on all items, to a minimum of 1. This discount increases to 2 if you have survived 5 or more missions.' },
+      { name: 'Shady Lender', description: 'Between missions, you can choose to gain 1d3 scrip one but start the next mission at 1 injury.' },
+      { name: 'Scrounger', description: 'You gain +1 scrip for completing missions, no matter what. You never get docked scrip for failing missions.' },
+      { name: 'Spotless', description: 'Once a mission, you can destroy an aesthetic kit expansion you own worth 3 or more scrip instead of suffering an injury.' },
+    ],
+    note: 'You can spend scrip as kit points',
+  },
+  {
     id: 'FIREBUG',
     name: 'FIREBUG',
     items: '► Solve Problems Creatively\n► Take the simple solution',
@@ -158,7 +171,7 @@ export const AGENDAS = [
   },
   {
     id: 'BIRDSONG',
-    name: 'SONGBIRD',
+    name: 'BIRDSONG',
     items: '► Get someone to do your bidding\n► Do something selfless',
     abilities: [
       { name: 'Codependency', description: 'When someone sets you up, you can trade 1 stress around (from you to them, or vice versa).' },

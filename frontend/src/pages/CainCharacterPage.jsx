@@ -4,6 +4,7 @@ import api from '../utils/api.js';
 import { handleBgmSync } from '../components/AudioSettings.jsx';
 import { getSystem } from '../utils/systems.js';
 import CainDiceRoller from '../components/CainDiceRoller.jsx';
+import KIT_CATEGORIES from '../utils/cainKitData.js';
 import toast from 'react-hot-toast';
 import FontSizeControl from '../components/FontSizeControl.jsx';
 import StickerLayer from '../components/StickerLayer.jsx';
@@ -84,12 +85,14 @@ function HookRow({ hook, index, onChange }) {
 }
 
 // ── Section box ──────────────────────────────────────────────────
-function SectionBox({ title, children, style = {} }) {
+function SectionBox({ title, children, style = {}, headerRight }) {
   return (
     <div style={{ border: `1px solid ${C.borderDark}`, marginBottom: 10, ...style }}>
-      <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase' }}>{title}</div>
+      <div style={{ background: C.dark, color: '#f2ede3', fontFamily: C.fontSans, fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', padding: '2px 8px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>{title}</span>
+        {headerRight && <span onClick={e => e.stopPropagation()}>{headerRight}</span>}
+      </div>
       <div style={{ padding: '8px 10px' }}>{children}</div>
-    <FontSizeControl />
     </div>
   );
 }
@@ -693,6 +696,9 @@ export default function CainCharacterPage() {
   const [sheet, setSheet] = useState({});
   const [saveStatus, setSaveStatus] = useState('saved');
   const [agendaAbilityPopup, setAgendaAbilityPopup] = useState(false);
+  const [kitPopupOpen, setKitPopupOpen] = useState(false);
+  const [kitSearch, setKitSearch] = useState('');
+  const [kitCatFilter, setKitCatFilter] = useState('all');
   const [tabStickers, setTabStickers] = useState({ sheet: [], bonds: [], notes: [] });
   const pageRef = useRef(null);
   const [bondAbilityPopup, setBondAbilityPopup] = useState(false);
@@ -790,6 +796,97 @@ export default function CainCharacterPage() {
   const handlePortraitFile = e => { const f = e.target.files?.[0]; if (!f) return; setCropSrc(URL.createObjectURL(f)); e.target.value = ''; };
   const handleCropConfirm = dataUrl => { update('portrait', dataUrl); URL.revokeObjectURL(cropSrc); setCropSrc(null); };
 
+  // ── Kit Item Popup ─────────────────────────────────────────────
+  const KitPopup = () => {
+    if (!kitPopupOpen) return null;
+    const allItems = KIT_CATEGORIES.flatMap(cat =>
+      cat.items.map(item => ({ ...item, catId: cat.id, catName: cat.name, catColor: cat.color }))
+    );
+    const filtered = allItems.filter(item => {
+      const matchSearch = !kitSearch.trim() ||
+        item.name.toLowerCase().includes(kitSearch.toLowerCase()) ||
+        item.desc.toLowerCase().includes(kitSearch.toLowerCase()) ||
+        (item.code && item.code.toLowerCase().includes(kitSearch.toLowerCase()));
+      const matchCat = kitCatFilter === 'all' || item.catId === kitCatFilter;
+      return matchSearch && matchCat;
+    });
+
+    const addItem = (item) => {
+      const code = item.code ? `[${item.code}] ` : '';
+      const cost = item.cost > 0 ? ` — ${item.cost} 🜁` : '';
+      const kp = item.kp > 0 ? ` / ${item.kp} KP` : '';
+      const tag = item.tag ? ` (${item.tag})` : '';
+      const line = `${code}${item.name}${tag}${cost}${kp}`;
+      const current = sheet.kitDescription || '';
+      const separator = current.trim() ? '\n' : '';
+      update('kitDescription', current + separator + line);
+      setKitPopupOpen(false);
+    };
+
+    return (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}
+        onClick={() => setKitPopupOpen(false)}>
+        <div style={{ background: C.bg, border:`1px solid ${C.borderDark}`, borderRadius:8, maxWidth:640, width:'92%', maxHeight:'85vh', display:'flex', flexDirection:'column' }}
+          onClick={e => e.stopPropagation()}>
+          {/* Header */}
+          <div style={{ padding:'14px 18px', borderBottom:`1px solid ${C.borderDark}`, display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ fontFamily:C.fontSans, fontSize:12, fontWeight:700, letterSpacing:'0.15em', flex:1 }}>COMMISSARY — ADD ITEM</div>
+            <button onClick={() => setKitPopupOpen(false)}
+              style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:3, padding:'3px 10px', fontFamily:C.fontSans, fontSize:9, color:C.muted, cursor:'pointer' }}>
+              CLOSE
+            </button>
+          </div>
+          {/* Search + filter */}
+          <div style={{ padding:'10px 18px', borderBottom:`1px solid ${C.border}`, display:'flex', gap:8, flexWrap:'wrap' }}>
+            <input value={kitSearch} onChange={e => setKitSearch(e.target.value)}
+              placeholder="ค้นหา item..."
+              style={{ flex:1, minWidth:140, background:'#1a1a1a', border:`1px solid ${C.border}`, borderRadius:4, padding:'6px 10px', fontFamily:C.font, fontSize:11, color:C.bg, outline:'none' }}
+            />
+            <select value={kitCatFilter} onChange={e => setKitCatFilter(e.target.value)}
+              style={{ background:'#1a1a1a', border:`1px solid ${C.border}`, borderRadius:4, padding:'6px 8px', fontFamily:C.fontSans, fontSize:9, color:C.bg, cursor:'pointer' }}>
+              <option value="all">ทุกหมวด</option>
+              {KIT_CATEGORIES.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+            </select>
+          </div>
+          {/* Item list */}
+          <div style={{ overflowY:'auto', flex:1, padding:'8px 0' }}>
+            {filtered.length === 0 && (
+              <div style={{ padding:20, textAlign:'center', fontFamily:C.font, fontSize:11, color:C.muted }}>ไม่พบ item</div>
+            )}
+            {filtered.map((item, i) => {
+              const alreadyAdded = (sheet.kitDescription||'').includes(item.name);
+              return (
+                <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'10px 18px', borderBottom:`1px solid ${C.border}`, background: alreadyAdded ? 'rgba(0,0,0,0.2)' : 'transparent' }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
+                      {item.code && <span style={{ fontFamily:C.fontSans, fontSize:8, color:C.muted, border:`1px solid ${C.border}`, padding:'1px 4px' }}>{item.code}</span>}
+                      <span style={{ fontFamily:C.fontSans, fontSize:11, fontWeight:700, color: item.catColor }}>{item.name}</span>
+                      {item.tag && <span style={{ fontFamily:C.font, fontSize:8, color:C.muted, fontStyle:'italic' }}>{item.tag}</span>}
+                      <span style={{ fontFamily:C.fontSans, fontSize:9, color:C.red, marginLeft:'auto' }}>
+                        {item.cost > 0 ? `${item.cost} 🜁` : 'Free'}
+                        {item.kp > 0 ? ` / ${item.kp} KP` : ''}
+                      </span>
+                    </div>
+                    <div style={{ fontFamily:C.font, fontSize:9, color:C.muted, lineHeight:1.5 }}>{item.desc}</div>
+                    <div style={{ fontFamily:C.fontSans, fontSize:8, color:C.muted, marginTop:2, opacity:0.6 }}>{item.catName}</div>
+                  </div>
+                  <button onClick={() => addItem(item)} disabled={!!alreadyAdded}
+                    style={{ flexShrink:0, background: alreadyAdded ? 'transparent' : C.dark,
+                      border:`1px solid ${alreadyAdded ? C.border : C.dark}`,
+                      color: alreadyAdded ? C.muted : C.bg,
+                      borderRadius:3, padding:'5px 12px', fontFamily:C.fontSans, fontSize:8,
+                      letterSpacing:'0.1em', cursor: alreadyAdded ? 'default' : 'pointer', marginTop:2 }}>
+                    {alreadyAdded ? 'ADDED' : '+ ADD'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!character) return (
     <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ fontFamily: C.font, color: C.mid }}>LOADING FILE...</div>
@@ -814,6 +911,7 @@ export default function CainCharacterPage() {
 
   return (
     <div ref={pageRef} style={{ background: '#d4cfc4', minHeight: '100vh', padding: '20px', position: 'relative' }}>
+      <KitPopup />
       <StickerLayer
         stickers={tabStickers[activeTab] || []}
         containerRef={pageRef}
@@ -1121,22 +1219,15 @@ export default function CainCharacterPage() {
                       value={key === 'name' ? character.name : (sheet[key] || '')}
                       onChange={e => {
                         if (key === 'name') {
-                          const newName = e.target.value;
-                          setCharacter(c => {
-                            const updated = { ...c, name: newName };
-                            charRef.current = updated;
-                            return updated;
-                          });
-                          update('_characterName', newName);
+                          setCharacter(c => ({ ...c, name: e.target.value }));
+                          update('name', e.target.value);
                         } else {
                           update(key, e.target.value);
                         }
                       }}
                       onBlur={async e => {
                         if (key === 'name' && e.target.value.trim()) {
-                          const newName = e.target.value.trim();
-                          charRef.current = { ...charRef.current, name: newName };
-                          await api.put(`/characters/${id}`, { name: newName }).catch(() => {});
+                          await api.put(`/characters/${id}`, { name: e.target.value.trim() });
                         }
                       }}
                       style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 13, color: C.dark, outline: 'none', padding: '2px 0' }} />
@@ -1357,20 +1448,29 @@ export default function CainCharacterPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
 
           {/* Kit */}
-          <SectionBox title="REGISTERED KIT">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <div style={{ fontFamily: C.fontSans, fontSize: 10, fontWeight: 700 }}>KIT POINTS:</div>
-              <CircleRow count={9} filled={sheet.kitPoints || 0} onToggle={i => update('kitPoints', i < (sheet.kitPoints || 0) ? i : i + 1)} size={14} dashedFrom={5} />
-            </div>
-            <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>Spend KP to pull out the following items any time:</div>
-            <textarea value={sheet.kitDescription || ''} onChange={e => update('kitDescription', e.target.value)} rows={6} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 11, color: C.dark, padding: 4 }} />
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ fontFamily: C.fontSans, fontSize: 11, fontWeight: 700 }}>■ $ ■ SCRIP:</div>
-              <input type="number" value={sheet.scrip || 0} onChange={e => update('scrip', parseInt(e.target.value) || 0)}
-                style={{ width: 60, fontFamily: C.font, fontSize: 14, fontWeight: 700, background: 'transparent', border: 'none', borderBottom: `1px solid ${C.border}`, outline: 'none', textAlign: 'center' }} />
-            </div>
-            <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted }}>Paid out per mission (5: success, 3: spare, -1: failure, +3 advance)</div>
-          </SectionBox>
+          <SectionBox title="REGISTERED KIT" headerRight={
+                    <button onClick={() => { setKitPopupOpen(true); setKitSearch(''); setKitCatFilter('all'); }}
+                      style={{ background: C.dark, border:'none', color: C.bg, fontFamily: C.fontSans, fontSize: 8,
+                        fontWeight: 700, letterSpacing: '0.1em', padding: '3px 10px', cursor: 'pointer' }}>
+                      + ADD
+                    </button>
+                  }>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ fontFamily: C.fontSans, fontSize: 10, fontWeight: 700 }}>KIT POINTS:</div>
+                  <CircleRow count={9} filled={sheet.kitPoints || 0} onToggle={i => update('kitPoints', i < (sheet.kitPoints || 0) ? i : i + 1)} />
+                </div>
+
+                <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>Spend KP to pull out items from your kits.</div>
+                <textarea value={sheet.kitDescription || ''} onChange={e => update('kitDescription', e.target.value)}
+                  rows={2} placeholder="Notes on kit / additional items..."
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: `1px solid ${C.border}`, fontFamily: C.font, fontSize: 10, color: C.dark, padding: 4, resize: 'vertical', boxSizing: 'border-box', marginBottom: 8 }} />
+                <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontFamily: C.fontSans, fontSize: 11, fontWeight: 700 }}>■ $ ■ SCRIP:</div>
+                  <input type="number" value={sheet.scrip || 0} onChange={e => update('scrip', parseInt(e.target.value)||0)}
+                    style={{ width: 60, fontFamily: C.font, fontSize: 14, fontWeight: 700, background: 'transparent', border: 'none', borderBottom: `1px solid ${C.border}`, outline: 'none', color: C.dark, textAlign: 'center' }} />
+                </div>
+                <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted }}>Paid out per mission (5: success, 3: partial, 0: miss, +1 Scrounger)</div>
+              </SectionBox>
 
           {/* Advancement */}
           <div>

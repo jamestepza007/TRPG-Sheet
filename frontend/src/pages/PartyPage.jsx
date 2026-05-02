@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../hooks/useAuth.js';
 import api from '../utils/api.js';
 import { handleBgmSync } from '../components/AudioSettings.jsx';
 import { getSystem } from '../utils/systems.js';
@@ -21,7 +22,7 @@ function VitalMini({ label, current, max, color }) {
   );
 }
 
-function DWMemberCard({ member, system }) {
+function DWMemberCard({ member, system, currentUserId, onEdit }) {
   const acc = system.accentColor;
   const sd = member.character.sheetData || {};
   return (
@@ -33,7 +34,15 @@ function DWMemberCard({ member, system }) {
           </div>
         )}
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: 18, color: acc }}>{member.character.name}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: 18, color: acc }}>{member.character.name}</div>
+            {currentUserId && member.user.id === currentUserId && (
+              <button onClick={onEdit}
+                style={{ background: acc, color: '#000', border: 'none', padding: '4px 12px', fontFamily: 'Cinzel, serif', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer', borderRadius: 4 }}>
+                EDIT
+              </button>
+            )}
+          </div>
           <div style={{ color: '#555', fontSize: 12 }}>{member.user.username}</div>
           <div style={{ color: '#666', fontSize: 12 }}>{sd.class || '—'} · Lv.{sd.level || 1}</div>
         </div>
@@ -89,7 +98,7 @@ function CainExecBar({ stress, execMax }) {
   );
 }
 
-function CainMemberCard({ member }) {
+function CainMemberCard({ member, currentUserId, onEdit }) {
   const sd = member.character.sheetData || {};
   const cat = sd.cat || 1;
   const injuries = sd.injuries || 0;
@@ -107,7 +116,15 @@ function CainMemberCard({ member }) {
         <div style={{ fontFamily: C.fontSans, fontSize: 12, fontWeight: 700, letterSpacing: '0.15em' }}>
           {member.character.name || 'UNNAMED'}
         </div>
-        <div style={{ fontFamily: C.fontSans, fontSize: 8, opacity: 0.6 }}>{member.user.username}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontFamily: C.fontSans, fontSize: 8, opacity: 0.6 }}>{member.user.username}</div>
+          {currentUserId && member.user.id === currentUserId && (
+            <button onClick={onEdit}
+              style={{ background: C.red, color: '#fff', border: 'none', padding: '2px 8px', fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer' }}>
+              EDIT
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ padding: '10px 12px' }}>
@@ -200,6 +217,7 @@ function CainMemberCard({ member }) {
 export default function PartyPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuthStore();
   const [partyData, setPartyData] = useState(null);
   const [system, setSystem] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -316,7 +334,7 @@ export default function PartyPage() {
         <div style={{ fontFamily: C.fontSans, fontSize: 8, fontWeight: 700, letterSpacing: '0.2em', color: C.mid, marginBottom: 10, textTransform: 'uppercase' }}>◈ Active Exorcists — Field Status</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
           {partyData.members.map(member => (
-            <CainMemberCard key={member.id} member={member} />
+            <CainMemberCard key={member.id} member={member} currentUserId={currentUser?.id} onEdit={() => navigate(`/characters/cain/${member.character.id}`)} />
           ))}
         </div>
 
@@ -361,7 +379,7 @@ export default function PartyPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
           {partyData.members.map(member => (
-            <DWMemberCard key={member.id} member={member} system={system} />
+            <DWMemberCard key={member.id} member={member} system={system} currentUserId={currentUser?.id} onEdit={() => navigate(`/characters/${member.character.id}`)} />
           ))}
         </div>
       </div>
